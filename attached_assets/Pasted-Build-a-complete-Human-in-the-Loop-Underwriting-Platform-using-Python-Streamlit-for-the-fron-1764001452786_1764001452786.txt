@@ -1,0 +1,31 @@
+Build a complete "Human-in-the-Loop" Underwriting Platform using **Python (Streamlit)** for the frontend and **PostgreSQL** for the database.
+
+**Core Components:**
+1. **Email Ingestion Pipeline (Backend):**
+   - Create a Flask server with a webhook (`/incoming-email`) to receive JSON payloads (Sender, Subject, Body, Attachments) from an external provider (SendGrid).
+   - Use OpenAI Vision API to extract text/data from PDF bank statement attachments.
+   - **Initial Processing:** Extract "Total Monthly Payments", "Diesel Payments", "Avg Monthly Income", "Annual Income", "Revenues (Last 4 Months)", and "NSF Count".
+
+2. **The Intelligence Layer (Learning Mechanism):**
+   - Create a function `generate_underwriting_summary(financial_data)` that calls OpenAI GPT-4.
+   - **CRITICAL:** This function must query the `TrainingExamples` database table. It should fetch the 3 most recent "Corrected" examples to include in the system prompt as "Few-Shot" examples. This allows the AI to learn from user corrections over time.
+
+3. **Streamlit Dashboard (Frontend):**
+   - **Inbox View:** Display a table of `Deals` with status (Pending, Underwritten, Approved, Rejected).
+   - **Detail View:** When a deal is clicked, show the original PDF side-by-side with the AI's extracted data.
+   - **Correction Mode:** Allow the user to EDIT the AI's numbers (e.g., change "Annual Income" if the AI misread it).
+   - **"Train" Button:** When the user saves corrections, update the `Deals` table AND insert a record into the `TrainingExamples` table (Input Data + Corrected Output) so the AI learns.
+
+4. **Configuration Page:**
+   - Create a settings page to adjust "Hard Rules" stored in the DB (e.g., `min_annual_income = 100000`, `holdback_percentage = 10`).
+   - The underwriting logic should reference these variables dynamically.
+
+5. **Database Schema:**
+   - `Deals`: ID, Sender, PDF_Path, ExtractedData (JSON), Status, AI_Summary, Final_Decision.
+   - `TrainingExamples`: ID, Original_Financial_JSON, User_Corrected_Summary, Created_At.
+   - `Settings`: Key, Value (for flexible underwriting criteria).
+
+**Tech Stack:**
+- Python (Streamlit for UI, Flask for Webhook).
+- PostgreSQL (Replit Database).
+- OpenAI API (GPT-4o for Vision and Logic).
