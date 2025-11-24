@@ -110,14 +110,17 @@ for category, category_settings in settings_by_category.items():
         submit = st.form_submit_button("💾 Save Settings", type="primary")
         
         if submit:
-            # Update settings in database
-            for setting_id, new_value in settings_to_update.items():
-                setting = db.query(Setting).filter(Setting.id == setting_id).first()
-                if setting:
-                    setting.value = new_value
-                    setting.updated_at = datetime.utcnow()
+            # Create a fresh database session for the update
+            with get_db() as update_db:
+                # Update settings in database
+                for setting_id, new_value in settings_to_update.items():
+                    setting = update_db.query(Setting).filter(Setting.id == setting_id).first()
+                    if setting:
+                        setting.value = new_value
+                        setting.updated_at = datetime.utcnow()
+                
+                update_db.commit()
             
-            db.commit()
             st.success(f"✅ {category} settings updated!")
             st.rerun()
     

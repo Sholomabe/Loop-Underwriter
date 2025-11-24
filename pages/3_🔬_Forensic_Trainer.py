@@ -44,7 +44,7 @@ truth_payments = 0.0
 truth_diesel = 0.0
 truth_nsf = 0
 
-# Excel upload section (outside form for immediate preview)
+# Excel upload section OR manual entry preview (outside form for immediate feedback)
 excel_file = None
 if truth_input_method == "📊 Upload Excel File":
     st.markdown("Upload an Excel file with the **correct** values (Annual Income, Monthly Income, etc.)")
@@ -104,6 +104,10 @@ if truth_input_method == "📊 Upload Excel File":
         except Exception as e:
             st.error(f"❌ Error reading Excel file: {str(e)}")
             st.info("Please make sure the Excel file has the correct column names.")
+else:
+    # Manual entry mode - show instructions
+    st.markdown("Enter the **correct** values in the form below (what the AI should have extracted)")
+    st.info("👇 Scroll down to the form below to enter PDF files and truth values manually")
 
 st.divider()
 
