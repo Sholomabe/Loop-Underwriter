@@ -272,6 +272,14 @@ Response:
   - Forensic Trainer with adversarial feedback
   - RAG-based pattern memory system
   - Dynamic configuration management
+  
+- **2024-11-24**: Bug fixes and feature additions
+  - Fixed file upload 403 errors by configuring Streamlit properly (maxUploadSize, maxMessageSize)
+  - Fixed SQLAlchemy DetachedInstanceError in Configuration page with fresh session per save
+  - Added Excel file upload for truth values in Forensic Trainer (.xlsx/.xls support)
+  - Implemented intelligent column name matching for Excel (case-insensitive, flexible)
+  - Fixed radio button UX - moved outside form for immediate mode switching
+  - Maintained security by keeping XSRF and CORS protection enabled
 
 ## User Preferences
 None specified yet.
