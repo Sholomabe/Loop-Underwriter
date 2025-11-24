@@ -36,13 +36,19 @@ truth_input_method = st.radio(
     key='truth_input_method'
 )
 
-# Initialize truth values
-truth_annual_income = 0.0
-truth_monthly_income = 0.0
-truth_revenues = 0.0
-truth_payments = 0.0
-truth_diesel = 0.0
-truth_nsf = 0
+# Initialize session state for truth values
+if 'truth_annual_income' not in st.session_state:
+    st.session_state.truth_annual_income = 0.0
+if 'truth_monthly_income' not in st.session_state:
+    st.session_state.truth_monthly_income = 0.0
+if 'truth_revenues' not in st.session_state:
+    st.session_state.truth_revenues = 0.0
+if 'truth_payments' not in st.session_state:
+    st.session_state.truth_payments = 0.0
+if 'truth_diesel' not in st.session_state:
+    st.session_state.truth_diesel = 0.0
+if 'truth_nsf' not in st.session_state:
+    st.session_state.truth_nsf = 0
 
 # Excel upload section OR manual entry preview (outside form for immediate feedback)
 excel_file = None
@@ -65,8 +71,10 @@ if truth_input_method == "📊 Upload Excel File":
             
             st.success(f"✅ Excel file loaded! Found {len(df)} rows.")
             
-            # Display preview
+            # Display preview - show column names for debugging
             with st.expander("📊 Preview Excel Data"):
+                st.write("**Column Names Found:**")
+                st.write(list(df.columns))
                 st.dataframe(df.head(), use_container_width=True)
             
             # Try to extract values from first row
@@ -85,25 +93,45 @@ if truth_input_method == "📊 Upload Excel File":
                                     return default
                     return default
                 
-                truth_annual_income = get_value_from_row(row, ['annual income', 'annual_income', 'income annual'])
-                truth_monthly_income = get_value_from_row(row, ['monthly income', 'monthly_income', 'avg monthly', 'average monthly'])
-                truth_revenues = get_value_from_row(row, ['revenue', 'revenues', 'total revenue', 'revenues_last'])
-                truth_payments = get_value_from_row(row, ['payment', 'payments', 'monthly payment', 'total payment'])
-                truth_diesel = get_value_from_row(row, ['diesel', 'diesel payment', 'diesel_payment'])
-                truth_nsf = int(get_value_from_row(row, ['nsf', 'nsf count', 'nsf_count'], 0))
+                # Extract and store in session state
+                st.session_state.truth_annual_income = get_value_from_row(row, ['annual income', 'annual_income', 'income annual', 'annual'])
+                st.session_state.truth_monthly_income = get_value_from_row(row, ['monthly income', 'monthly_income', 'avg monthly', 'average monthly', 'monthly'])
+                st.session_state.truth_revenues = get_value_from_row(row, ['revenue', 'revenues', 'total revenue', 'revenues_last'])
+                st.session_state.truth_payments = get_value_from_row(row, ['payment', 'payments', 'monthly payment', 'total payment'])
+                st.session_state.truth_diesel = get_value_from_row(row, ['diesel', 'diesel payment', 'diesel_payment'])
+                st.session_state.truth_nsf = int(get_value_from_row(row, ['nsf', 'nsf count', 'nsf_count'], 0))
                 
                 st.info(f"""
-                **Extracted Values:**
-                - Annual Income: ${truth_annual_income:,.2f}
-                - Monthly Income: ${truth_monthly_income:,.2f}
-                - Revenues (4M): ${truth_revenues:,.2f}
-                - Monthly Payments: ${truth_payments:,.2f}
-                - Diesel Payments: ${truth_diesel:,.2f}
-                - NSF Count: {truth_nsf}
+                **Extracted Values (Saved to Session):**
+                - Annual Income: ${st.session_state.truth_annual_income:,.2f}
+                - Monthly Income: ${st.session_state.truth_monthly_income:,.2f}
+                - Revenues (4M): ${st.session_state.truth_revenues:,.2f}
+                - Monthly Payments: ${st.session_state.truth_payments:,.2f}
+                - Diesel Payments: ${st.session_state.truth_diesel:,.2f}
+                - NSF Count: {st.session_state.truth_nsf}
                 """)
         except Exception as e:
             st.error(f"❌ Error reading Excel file: {str(e)}")
             st.info("Please make sure the Excel file has the correct column names.")
+    
+    # Show current saved values
+    if excel_file is None and any([
+        st.session_state.truth_annual_income > 0,
+        st.session_state.truth_monthly_income > 0,
+        st.session_state.truth_revenues > 0,
+        st.session_state.truth_payments > 0,
+        st.session_state.truth_diesel > 0,
+        st.session_state.truth_nsf > 0
+    ]):
+        st.success(f"""
+        **Using Previously Loaded Excel Values:**
+        - Annual Income: ${st.session_state.truth_annual_income:,.2f}
+        - Monthly Income: ${st.session_state.truth_monthly_income:,.2f}
+        - Revenues (4M): ${st.session_state.truth_revenues:,.2f}
+        - Monthly Payments: ${st.session_state.truth_payments:,.2f}
+        - Diesel Payments: ${st.session_state.truth_diesel:,.2f}
+        - NSF Count: {st.session_state.truth_nsf}
+        """)
 else:
     # Manual entry mode - show instructions
     st.markdown("Enter the **correct** values in the form below (what the AI should have extracted)")
@@ -133,30 +161,49 @@ with st.form("upload_training_deal"):
         col1, col2 = st.columns(2)
         
         with col1:
-            truth_annual_income = st.number_input("Truth: Annual Income", value=truth_annual_income, step=1000.0, key='form_annual_income')
-            truth_monthly_income = st.number_input("Truth: Avg Monthly Income", value=truth_monthly_income, step=100.0, key='form_monthly_income')
-            truth_revenues = st.number_input("Truth: Revenues (4M)", value=truth_revenues, step=1000.0, key='form_revenues')
+            truth_annual_income = st.number_input("Truth: Annual Income", value=st.session_state.truth_annual_income, step=1000.0, key='form_annual_income')
+            truth_monthly_income = st.number_input("Truth: Avg Monthly Income", value=st.session_state.truth_monthly_income, step=100.0, key='form_monthly_income')
+            truth_revenues = st.number_input("Truth: Revenues (4M)", value=st.session_state.truth_revenues, step=1000.0, key='form_revenues')
         
         with col2:
-            truth_payments = st.number_input("Truth: Monthly Payments", value=truth_payments, step=100.0, key='form_payments')
-            truth_diesel = st.number_input("Truth: Diesel Payments", value=truth_diesel, step=100.0, key='form_diesel')
-            truth_nsf = st.number_input("Truth: NSF Count", value=int(truth_nsf), step=1, key='form_nsf')
+            truth_payments = st.number_input("Truth: Monthly Payments", value=st.session_state.truth_payments, step=100.0, key='form_payments')
+            truth_diesel = st.number_input("Truth: Diesel Payments", value=st.session_state.truth_diesel, step=100.0, key='form_diesel')
+            truth_nsf = st.number_input("Truth: NSF Count", value=int(st.session_state.truth_nsf), step=1, key='form_nsf')
     else:
-        # Excel mode - display read-only summary
+        # Excel mode - display read-only summary using session state
         st.info(f"""
         **Using Excel Values:**
-        - Annual Income: ${truth_annual_income:,.2f}
-        - Monthly Income: ${truth_monthly_income:,.2f}
-        - Revenues (4M): ${truth_revenues:,.2f}
-        - Monthly Payments: ${truth_payments:,.2f}
-        - Diesel Payments: ${truth_diesel:,.2f}
-        - NSF Count: {truth_nsf}
+        - Annual Income: ${st.session_state.truth_annual_income:,.2f}
+        - Monthly Income: ${st.session_state.truth_monthly_income:,.2f}
+        - Revenues (4M): ${st.session_state.truth_revenues:,.2f}
+        - Monthly Payments: ${st.session_state.truth_payments:,.2f}
+        - Diesel Payments: ${st.session_state.truth_diesel:,.2f}
+        - NSF Count: {st.session_state.truth_nsf}
         """)
     
     submit_training = st.form_submit_button("🧪 Run Adversarial Training", type="primary")
     
     if submit_training and uploaded_pdfs:
         with st.spinner("Processing training deal..."):
+            # Get truth values from appropriate source
+            # If manual mode, use form values; if Excel mode, use session state
+            if truth_input_method == "✍️ Enter Manually":
+                # Use form values (already defined in manual mode)
+                final_truth_annual = truth_annual_income
+                final_truth_monthly = truth_monthly_income
+                final_truth_revenues = truth_revenues
+                final_truth_payments = truth_payments
+                final_truth_diesel = truth_diesel
+                final_truth_nsf = truth_nsf
+            else:
+                # Use session state values (from Excel upload)
+                final_truth_annual = st.session_state.truth_annual_income
+                final_truth_monthly = st.session_state.truth_monthly_income
+                final_truth_revenues = st.session_state.truth_revenues
+                final_truth_payments = st.session_state.truth_payments
+                final_truth_diesel = st.session_state.truth_diesel
+                final_truth_nsf = st.session_state.truth_nsf
+            
             # Save uploaded PDFs
             upload_dir = "uploads"
             os.makedirs(upload_dir, exist_ok=True)
@@ -254,12 +301,12 @@ with st.form("upload_training_deal"):
                 }
                 
                 human_truth = {
-                    'annual_income': truth_annual_income,
-                    'avg_monthly_income': truth_monthly_income,
-                    'revenues_last_4_months': truth_revenues,
-                    'total_monthly_payments': truth_payments,
-                    'diesel_payments': truth_diesel,
-                    'nsf_count': truth_nsf
+                    'annual_income': final_truth_annual,
+                    'avg_monthly_income': final_truth_monthly,
+                    'revenues_last_4_months': final_truth_revenues,
+                    'total_monthly_payments': final_truth_payments,
+                    'diesel_payments': final_truth_diesel,
+                    'nsf_count': final_truth_nsf
                 }
                 
                 # Store in session state for display
