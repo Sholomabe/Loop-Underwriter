@@ -81,6 +81,11 @@ if truth_input_method == "📊 Upload Excel File":
             if len(df) > 0:
                 row = df.iloc[0]
                 
+                # Debug: Show raw first row data
+                st.write("**🔍 Debug: First Row Raw Data:**")
+                for col in df.columns:
+                    st.write(f"- `{col}` = {row[col]}")
+                
                 # Map column names (case-insensitive and flexible)
                 def get_value_from_row(row, possible_names, default=0):
                     for name in possible_names:
@@ -88,17 +93,34 @@ if truth_input_method == "📊 Upload Excel File":
                             if name.lower() in col.lower():
                                 try:
                                     val = row[col]
-                                    return float(val) if pd.notna(val) else default
-                                except:
+                                    matched_value = float(val) if pd.notna(val) else default
+                                    st.write(f"✅ Matched '{name}' with column '{col}' → Value: {matched_value}")
+                                    return matched_value
+                                except Exception as e:
+                                    st.write(f"⚠️ Error converting '{col}': {e}")
                                     return default
+                    st.write(f"❌ No match found for any of: {possible_names}")
                     return default
                 
+                st.write("**🔄 Matching Process:**")
+                
                 # Extract and store in session state
+                st.write("*Looking for Annual Income...*")
                 st.session_state.truth_annual_income = get_value_from_row(row, ['annual income', 'annual_income', 'income annual', 'annual'])
+                
+                st.write("*Looking for Monthly Income...*")
                 st.session_state.truth_monthly_income = get_value_from_row(row, ['monthly income', 'monthly_income', 'avg monthly', 'average monthly', 'monthly'])
+                
+                st.write("*Looking for Revenues...*")
                 st.session_state.truth_revenues = get_value_from_row(row, ['revenue', 'revenues', 'total revenue', 'revenues_last'])
+                
+                st.write("*Looking for Payments...*")
                 st.session_state.truth_payments = get_value_from_row(row, ['payment', 'payments', 'monthly payment', 'total payment'])
+                
+                st.write("*Looking for Diesel...*")
                 st.session_state.truth_diesel = get_value_from_row(row, ['diesel', 'diesel payment', 'diesel_payment'])
+                
+                st.write("*Looking for NSF Count...*")
                 st.session_state.truth_nsf = int(get_value_from_row(row, ['nsf', 'nsf count', 'nsf_count'], 0))
                 
                 st.info(f"""
