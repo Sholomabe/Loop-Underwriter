@@ -23,6 +23,90 @@ st.divider()
 # Upload Deal Section
 st.subheader("📤 Upload Training Deal")
 
+# Initialize session state for truth input method
+if 'truth_input_method' not in st.session_state:
+    st.session_state.truth_input_method = "✍️ Enter Manually"
+
+# Radio button outside form to allow immediate re-render
+st.subheader("📝 Enter Truth Values")
+truth_input_method = st.radio(
+    "How would you like to provide truth values?",
+    options=["📊 Upload Excel File", "✍️ Enter Manually"],
+    horizontal=True,
+    key='truth_input_method'
+)
+
+# Initialize truth values
+truth_annual_income = 0.0
+truth_monthly_income = 0.0
+truth_revenues = 0.0
+truth_payments = 0.0
+truth_diesel = 0.0
+truth_nsf = 0
+
+# Excel upload section (outside form for immediate preview)
+excel_file = None
+if truth_input_method == "📊 Upload Excel File":
+    st.markdown("Upload an Excel file with the **correct** values (Annual Income, Monthly Income, etc.)")
+    
+    excel_file = st.file_uploader(
+        "Upload Truth Values Excel",
+        type=['xlsx', 'xls'],
+        help="Excel should have columns: Annual Income, Monthly Income, Revenues, Monthly Payments, Diesel Payments, NSF Count",
+        key='excel_uploader'
+    )
+    
+    if excel_file:
+        try:
+            import pandas as pd
+            
+            # Read Excel file
+            df = pd.read_excel(excel_file)
+            
+            st.success(f"✅ Excel file loaded! Found {len(df)} rows.")
+            
+            # Display preview
+            with st.expander("📊 Preview Excel Data"):
+                st.dataframe(df.head(), use_container_width=True)
+            
+            # Try to extract values from first row
+            if len(df) > 0:
+                row = df.iloc[0]
+                
+                # Map column names (case-insensitive and flexible)
+                def get_value_from_row(row, possible_names, default=0):
+                    for name in possible_names:
+                        for col in df.columns:
+                            if name.lower() in col.lower():
+                                try:
+                                    val = row[col]
+                                    return float(val) if pd.notna(val) else default
+                                except:
+                                    return default
+                    return default
+                
+                truth_annual_income = get_value_from_row(row, ['annual income', 'annual_income', 'income annual'])
+                truth_monthly_income = get_value_from_row(row, ['monthly income', 'monthly_income', 'avg monthly', 'average monthly'])
+                truth_revenues = get_value_from_row(row, ['revenue', 'revenues', 'total revenue', 'revenues_last'])
+                truth_payments = get_value_from_row(row, ['payment', 'payments', 'monthly payment', 'total payment'])
+                truth_diesel = get_value_from_row(row, ['diesel', 'diesel payment', 'diesel_payment'])
+                truth_nsf = int(get_value_from_row(row, ['nsf', 'nsf count', 'nsf_count'], 0))
+                
+                st.info(f"""
+                **Extracted Values:**
+                - Annual Income: ${truth_annual_income:,.2f}
+                - Monthly Income: ${truth_monthly_income:,.2f}
+                - Revenues (4M): ${truth_revenues:,.2f}
+                - Monthly Payments: ${truth_payments:,.2f}
+                - Diesel Payments: ${truth_diesel:,.2f}
+                - NSF Count: {truth_nsf}
+                """)
+        except Exception as e:
+            st.error(f"❌ Error reading Excel file: {str(e)}")
+            st.info("Please make sure the Excel file has the correct column names.")
+
+st.divider()
+
 with st.form("upload_training_deal"):
     col1, col2 = st.columns(2)
     
@@ -34,98 +118,36 @@ with st.form("upload_training_deal"):
         uploaded_pdfs = st.file_uploader(
             "Upload PDF Bank Statements",
             type=['pdf'],
-            accept_multiple_files=True
+            accept_multiple_files=True,
+            key='pdf_uploader'
         )
     
-    st.divider()
-    
-    st.subheader("📝 Enter Truth Values")
-    
-    # Option to upload Excel or enter manually
-    truth_input_method = st.radio(
-        "How would you like to provide truth values?",
-        options=["📊 Upload Excel File", "✍️ Enter Manually"],
-        horizontal=True
-    )
-    
-    truth_annual_income = 0.0
-    truth_monthly_income = 0.0
-    truth_revenues = 0.0
-    truth_payments = 0.0
-    truth_diesel = 0.0
-    truth_nsf = 0
-    
-    if truth_input_method == "📊 Upload Excel File":
-        st.markdown("Upload an Excel file with the **correct** values (Annual Income, Monthly Income, etc.)")
-        
-        excel_file = st.file_uploader(
-            "Upload Truth Values Excel",
-            type=['xlsx', 'xls'],
-            help="Excel should have columns: Annual Income, Monthly Income, Revenues, Monthly Payments, Diesel Payments, NSF Count"
-        )
-        
-        if excel_file:
-            try:
-                import pandas as pd
-                
-                # Read Excel file
-                df = pd.read_excel(excel_file)
-                
-                st.success(f"✅ Excel file loaded! Found {len(df)} rows.")
-                
-                # Display preview
-                with st.expander("📊 Preview Excel Data"):
-                    st.dataframe(df.head(), use_container_width=True)
-                
-                # Try to extract values from first row
-                if len(df) > 0:
-                    row = df.iloc[0]
-                    
-                    # Map column names (case-insensitive and flexible)
-                    def get_value_from_row(row, possible_names, default=0):
-                        for name in possible_names:
-                            for col in df.columns:
-                                if name.lower() in col.lower():
-                                    try:
-                                        val = row[col]
-                                        return float(val) if pd.notna(val) else default
-                                    except:
-                                        return default
-                        return default
-                    
-                    truth_annual_income = get_value_from_row(row, ['annual income', 'annual_income', 'income annual'])
-                    truth_monthly_income = get_value_from_row(row, ['monthly income', 'monthly_income', 'avg monthly', 'average monthly'])
-                    truth_revenues = get_value_from_row(row, ['revenue', 'revenues', 'total revenue', 'revenues_last'])
-                    truth_payments = get_value_from_row(row, ['payment', 'payments', 'monthly payment', 'total payment'])
-                    truth_diesel = get_value_from_row(row, ['diesel', 'diesel payment', 'diesel_payment'])
-                    truth_nsf = int(get_value_from_row(row, ['nsf', 'nsf count', 'nsf_count'], 0))
-                    
-                    st.info(f"""
-                    **Extracted Values:**
-                    - Annual Income: ${truth_annual_income:,.2f}
-                    - Monthly Income: ${truth_monthly_income:,.2f}
-                    - Revenues (4M): ${truth_revenues:,.2f}
-                    - Monthly Payments: ${truth_payments:,.2f}
-                    - Diesel Payments: ${truth_diesel:,.2f}
-                    - NSF Count: {truth_nsf}
-                    """)
-            except Exception as e:
-                st.error(f"❌ Error reading Excel file: {str(e)}")
-                st.info("Please make sure the Excel file has the correct column names.")
-    else:
+    # Show manual input fields if manual entry is selected
+    if truth_input_method == "✍️ Enter Manually":
         st.markdown("Enter the **correct** values for this deal (what the AI should have extracted)")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            truth_annual_income = st.number_input("Truth: Annual Income", value=0.0, step=1000.0)
-            truth_monthly_income = st.number_input("Truth: Avg Monthly Income", value=0.0, step=100.0)
-            truth_revenues = st.number_input("Truth: Revenues (4M)", value=0.0, step=1000.0)
+            truth_annual_income = st.number_input("Truth: Annual Income", value=truth_annual_income, step=1000.0, key='form_annual_income')
+            truth_monthly_income = st.number_input("Truth: Avg Monthly Income", value=truth_monthly_income, step=100.0, key='form_monthly_income')
+            truth_revenues = st.number_input("Truth: Revenues (4M)", value=truth_revenues, step=1000.0, key='form_revenues')
         
         with col2:
-            truth_payments = st.number_input("Truth: Monthly Payments", value=0.0, step=100.0)
-            truth_diesel = st.number_input("Truth: Diesel Payments", value=0.0, step=100.0)
-            truth_nsf = st.number_input("Truth: NSF Count", value=0, step=1)
+            truth_payments = st.number_input("Truth: Monthly Payments", value=truth_payments, step=100.0, key='form_payments')
+            truth_diesel = st.number_input("Truth: Diesel Payments", value=truth_diesel, step=100.0, key='form_diesel')
+            truth_nsf = st.number_input("Truth: NSF Count", value=int(truth_nsf), step=1, key='form_nsf')
+    else:
+        # Excel mode - display read-only summary
+        st.info(f"""
+        **Using Excel Values:**
+        - Annual Income: ${truth_annual_income:,.2f}
+        - Monthly Income: ${truth_monthly_income:,.2f}
+        - Revenues (4M): ${truth_revenues:,.2f}
+        - Monthly Payments: ${truth_payments:,.2f}
+        - Diesel Payments: ${truth_diesel:,.2f}
+        - NSF Count: {truth_nsf}
+        """)
     
     submit_training = st.form_submit_button("🧪 Run Adversarial Training", type="primary")
     
