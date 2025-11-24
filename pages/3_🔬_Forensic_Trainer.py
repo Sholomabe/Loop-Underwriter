@@ -66,8 +66,37 @@ if truth_input_method == "📊 Upload Excel File":
         try:
             import pandas as pd
             
-            # Read Excel file
-            df = pd.read_excel(excel_file)
+            # First, read without header to inspect the file
+            df_raw = pd.read_excel(excel_file, header=None)
+            
+            st.write("**🔍 Raw Excel Structure (first 10 rows):**")
+            st.dataframe(df_raw.head(10), use_container_width=True)
+            
+            # Try to auto-detect the header row by finding the first row with non-null values
+            header_row = None
+            for idx in range(min(10, len(df_raw))):
+                row = df_raw.iloc[idx]
+                # Check if this row has mostly non-null string values (likely a header)
+                non_null_count = row.notna().sum()
+                if non_null_count >= 3:  # At least 3 columns with values
+                    # Check if values are strings (header) or numbers (data)
+                    string_count = sum(1 for val in row if isinstance(val, str))
+                    if string_count >= 3:
+                        header_row = idx
+                        st.info(f"🎯 Detected header row at index {idx}")
+                        break
+            
+            # If we found a header row, read again with proper header
+            if header_row is not None:
+                df = pd.read_excel(excel_file, header=header_row)
+            else:
+                # Fallback: try common header positions
+                st.warning("⚠️ Could not auto-detect header. Trying row 0, 1, and 2...")
+                # Try row 1 as header (skip first row)
+                df = pd.read_excel(excel_file, header=1)
+                if df.columns.str.contains('Unnamed').sum() > len(df.columns) / 2:
+                    # More than half are unnamed, try row 2
+                    df = pd.read_excel(excel_file, header=2)
             
             st.success(f"✅ Excel file loaded! Found {len(df)} rows.")
             
