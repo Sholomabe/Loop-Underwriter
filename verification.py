@@ -106,6 +106,8 @@ def auto_retry_extraction_with_verification(
     retry_count = 0
     error_feedback = None
     final_status = "Pending Approval"
+    extracted_data: Dict = {}
+    reasoning_log: str = ""
     
     while retry_count <= max_retries:
         # Extract data (with error feedback if this is a retry)
