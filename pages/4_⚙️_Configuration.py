@@ -17,13 +17,25 @@ st.divider()
 with get_db() as db:
     settings = db.query(Setting).all()
     
+    # Convert to dictionaries to avoid detached instance errors
+    settings_dicts = []
+    for s in settings:
+        settings_dicts.append({
+            'id': s.id,
+            'key': s.key,
+            'value': s.value,
+            'value_type': s.value_type,
+            'description': s.description,
+            'category': s.category
+        })
+    
     # Group by category
     settings_by_category = {}
-    for setting in settings:
-        category = setting.category or "General"
+    for setting_dict in settings_dicts:
+        category = setting_dict['category'] or "General"
         if category not in settings_by_category:
             settings_by_category[category] = []
-        settings_by_category[category].append(setting)
+        settings_by_category[category].append(setting_dict)
     
     # If no settings exist, create defaults
     if not settings:
@@ -58,42 +70,42 @@ for category, category_settings in settings_by_category.items():
             
             with col1:
                 # Display input based on value type
-                if setting.value_type == 'integer':
+                if setting['value_type'] == 'integer':
                     new_value = st.number_input(
-                        setting.key.replace('_', ' ').title(),
-                        value=int(setting.value),
+                        setting['key'].replace('_', ' ').title(),
+                        value=int(setting['value']),
                         step=1,
-                        help=setting.description,
-                        key=f"input_{setting.id}"
+                        help=setting['description'],
+                        key=f"input_{setting['id']}"
                     )
-                elif setting.value_type == 'float':
+                elif setting['value_type'] == 'float':
                     new_value = st.number_input(
-                        setting.key.replace('_', ' ').title(),
-                        value=float(setting.value),
+                        setting['key'].replace('_', ' ').title(),
+                        value=float(setting['value']),
                         step=0.01,
-                        help=setting.description,
-                        key=f"input_{setting.id}"
+                        help=setting['description'],
+                        key=f"input_{setting['id']}"
                     )
-                elif setting.value_type == 'boolean':
+                elif setting['value_type'] == 'boolean':
                     new_value = st.checkbox(
-                        setting.key.replace('_', ' ').title(),
-                        value=setting.value.lower() == 'true',
-                        help=setting.description,
-                        key=f"input_{setting.id}"
+                        setting['key'].replace('_', ' ').title(),
+                        value=setting['value'].lower() == 'true',
+                        help=setting['description'],
+                        key=f"input_{setting['id']}"
                     )
                 else:  # string
                     new_value = st.text_input(
-                        setting.key.replace('_', ' ').title(),
-                        value=setting.value,
-                        help=setting.description,
-                        key=f"input_{setting.id}"
+                        setting['key'].replace('_', ' ').title(),
+                        value=setting['value'],
+                        help=setting['description'],
+                        key=f"input_{setting['id']}"
                     )
                 
-                settings_to_update[setting.id] = str(new_value)
+                settings_to_update[setting['id']] = str(new_value)
             
             with col2:
-                st.caption(f"**Type:** {setting.value_type}")
-                st.caption(f"**Current:** {setting.value}")
+                st.caption(f"**Type:** {setting['value_type']}")
+                st.caption(f"**Current:** {setting['value']}")
         
         submit = st.form_submit_button("💾 Save Settings", type="primary")
         
