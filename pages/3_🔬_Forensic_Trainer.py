@@ -65,102 +65,92 @@ if truth_input_method == "📊 Upload Excel File":
     if excel_file:
         try:
             import pandas as pd
+            import numpy as np
             
-            # First, read without header to inspect the file
+            # Read Excel file without headers (treat as grid of cells)
             df_raw = pd.read_excel(excel_file, header=None)
             
-            st.write("**🔍 Raw Excel Structure (first 10 rows):**")
-            st.dataframe(df_raw.head(10), use_container_width=True)
+            st.success(f"✅ Excel file loaded! Found {len(df_raw)} rows and {len(df_raw.columns)} columns.")
             
-            # Try to auto-detect the header row by finding the first row with non-null values
-            header_row = None
-            for idx in range(min(10, len(df_raw))):
-                row = df_raw.iloc[idx]
-                # Check if this row has mostly non-null string values (likely a header)
-                non_null_count = row.notna().sum()
-                if non_null_count >= 3:  # At least 3 columns with values
-                    # Check if values are strings (header) or numbers (data)
-                    string_count = sum(1 for val in row if isinstance(val, str))
-                    if string_count >= 3:
-                        header_row = idx
-                        st.info(f"🎯 Detected header row at index {idx}")
-                        break
+            # Display preview
+            with st.expander("📊 Preview Raw Excel Data"):
+                st.dataframe(df_raw.head(20), use_container_width=True)
             
-            # If we found a header row, read again with proper header
-            if header_row is not None:
-                df = pd.read_excel(excel_file, header=header_row)
+            # Function to search for a label and get the value to its right
+            def find_value_by_label(df, label_keywords, offset_col=1, offset_row=0):
+                """Search for label keywords and return the value offset from it"""
+                for row_idx in range(len(df)):
+                    for col_idx in range(len(df.columns)):
+                        cell_value = df.iloc[row_idx, col_idx]
+                        if pd.notna(cell_value) and isinstance(cell_value, str):
+                            cell_lower = str(cell_value).lower()
+                            # Check if any keyword matches
+                            for keyword in label_keywords:
+                                if keyword.lower() in cell_lower:
+                                    # Found the label, get the value at offset
+                                    try:
+                                        value_col = col_idx + offset_col
+                                        value_row = row_idx + offset_row
+                                        if value_col < len(df.columns) and value_row < len(df):
+                                            value = df.iloc[value_row, value_col]
+                                            if pd.notna(value):
+                                                # Try to convert to float
+                                                try:
+                                                    return float(str(value).replace('$', '').replace(',', '').replace('%', ''))
+                                                except:
+                                                    return 0
+                                    except:
+                                        pass
+                return 0
+            
+            st.write("**🔄 Searching for values in spreadsheet...**")
+            
+            # Search for each value
+            st.write("*Looking for Annual Income...*")
+            annual_income = find_value_by_label(df_raw, ['annual income', 'original balance to annual income'], offset_col=1)
+            if annual_income == 0:
+                # Try percentage-based calculation if we find "Original balance to Annual Income (As a percentage)"
+                # This might be a percentage, so we'll skip for now
+                st.write(f"⚠️ Could not find Annual Income directly")
             else:
-                # Fallback: try common header positions
-                st.warning("⚠️ Could not auto-detect header. Trying row 0, 1, and 2...")
-                # Try row 1 as header (skip first row)
-                df = pd.read_excel(excel_file, header=1)
-                if df.columns.str.contains('Unnamed').sum() > len(df.columns) / 2:
-                    # More than half are unnamed, try row 2
-                    df = pd.read_excel(excel_file, header=2)
+                st.write(f"✅ Found: ${annual_income:,.2f}")
+            st.session_state.truth_annual_income = annual_income
             
-            st.success(f"✅ Excel file loaded! Found {len(df)} rows.")
+            st.write("*Looking for Average Monthly Income...*")
+            monthly_income = find_value_by_label(df_raw, ['average monthly income', 'avg monthly income'], offset_col=1)
+            st.write(f"✅ Found: ${monthly_income:,.2f}")
+            st.session_state.truth_monthly_income = monthly_income
             
-            # Display preview - show column names for debugging
-            with st.expander("📊 Preview Excel Data"):
-                st.write("**Column Names Found:**")
-                st.write(list(df.columns))
-                st.dataframe(df.head(), use_container_width=True)
+            st.write("*Looking for Total Revenues (last 4 months)...*")
+            revenues = find_value_by_label(df_raw, ['total last four monthly payments', 'last four monthly'], offset_col=1)
+            st.write(f"✅ Found: ${revenues:,.2f}")
+            st.session_state.truth_revenues = revenues
             
-            # Try to extract values from first row
-            if len(df) > 0:
-                row = df.iloc[0]
-                
-                # Debug: Show raw first row data
-                st.write("**🔍 Debug: First Row Raw Data:**")
-                for col in df.columns:
-                    st.write(f"- `{col}` = {row[col]}")
-                
-                # Map column names (case-insensitive and flexible)
-                def get_value_from_row(row, possible_names, default=0):
-                    for name in possible_names:
-                        for col in df.columns:
-                            if name.lower() in col.lower():
-                                try:
-                                    val = row[col]
-                                    matched_value = float(val) if pd.notna(val) else default
-                                    st.write(f"✅ Matched '{name}' with column '{col}' → Value: {matched_value}")
-                                    return matched_value
-                                except Exception as e:
-                                    st.write(f"⚠️ Error converting '{col}': {e}")
-                                    return default
-                    st.write(f"❌ No match found for any of: {possible_names}")
-                    return default
-                
-                st.write("**🔄 Matching Process:**")
-                
-                # Extract and store in session state
-                st.write("*Looking for Annual Income...*")
-                st.session_state.truth_annual_income = get_value_from_row(row, ['annual income', 'annual_income', 'income annual', 'annual'])
-                
-                st.write("*Looking for Monthly Income...*")
-                st.session_state.truth_monthly_income = get_value_from_row(row, ['monthly income', 'monthly_income', 'avg monthly', 'average monthly', 'monthly'])
-                
-                st.write("*Looking for Revenues...*")
-                st.session_state.truth_revenues = get_value_from_row(row, ['revenue', 'revenues', 'total revenue', 'revenues_last'])
-                
-                st.write("*Looking for Payments...*")
-                st.session_state.truth_payments = get_value_from_row(row, ['payment', 'payments', 'monthly payment', 'total payment'])
-                
-                st.write("*Looking for Diesel...*")
-                st.session_state.truth_diesel = get_value_from_row(row, ['diesel', 'diesel payment', 'diesel_payment'])
-                
-                st.write("*Looking for NSF Count...*")
-                st.session_state.truth_nsf = int(get_value_from_row(row, ['nsf', 'nsf count', 'nsf_count'], 0))
-                
-                st.info(f"""
-                **Extracted Values (Saved to Session):**
-                - Annual Income: ${st.session_state.truth_annual_income:,.2f}
-                - Monthly Income: ${st.session_state.truth_monthly_income:,.2f}
-                - Revenues (4M): ${st.session_state.truth_revenues:,.2f}
-                - Monthly Payments: ${st.session_state.truth_payments:,.2f}
-                - Diesel Payments: ${st.session_state.truth_diesel:,.2f}
-                - NSF Count: {st.session_state.truth_nsf}
-                """)
+            st.write("*Looking for Total Monthly Payments...*")
+            payments = find_value_by_label(df_raw, ['total monthly payments'], offset_col=1)
+            st.write(f"✅ Found: ${payments:,.2f}")
+            st.session_state.truth_payments = payments
+            
+            st.write("*Looking for Diesel Payments...*")
+            diesel = find_value_by_label(df_raw, ['diesel fuel payment', 'diesel payment'], offset_col=1)
+            st.write(f"✅ Found: ${diesel:,.2f}")
+            st.session_state.truth_diesel = diesel
+            
+            st.write("*Looking for NSF Count...*")
+            # NSF might not be in this format, default to 0
+            nsf = 0
+            st.write(f"ℹ️ NSF Count not found in this format, defaulting to {nsf}")
+            st.session_state.truth_nsf = nsf
+            
+            st.info(f"""
+            **Extracted Values (Saved to Session):**
+            - Annual Income: ${st.session_state.truth_annual_income:,.2f}
+            - Monthly Income: ${st.session_state.truth_monthly_income:,.2f}
+            - Revenues (4M): ${st.session_state.truth_revenues:,.2f}
+            - Monthly Payments: ${st.session_state.truth_payments:,.2f}
+            - Diesel Payments: ${st.session_state.truth_diesel:,.2f}
+            - NSF Count: {st.session_state.truth_nsf}
+            """)
         except Exception as e:
             st.error(f"❌ Error reading Excel file: {str(e)}")
             st.info("Please make sure the Excel file has the correct column names.")
