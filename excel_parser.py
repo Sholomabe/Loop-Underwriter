@@ -102,6 +102,9 @@ def parse_underwriting_excel(file_path_or_buffer) -> Dict[str, Any]:
         # Parse Weekly Positions
         result['weekly_positions'] = parse_weekly_positions(df, result['parse_log'])
         
+        # Parse Monthly Positions (non MCA)
+        result['monthly_positions_non_mca'] = parse_monthly_positions_non_mca(df, result['parse_log'])
+        
         # Parse Bank Account Data
         result['bank_accounts'] = parse_bank_accounts(df, result['parse_log'])
         
@@ -225,53 +228,82 @@ def parse_info_needed_section(df: pd.DataFrame, log: List[str]) -> Dict[str, Any
     # Override with fixed locations for specific fields (user confirmed exact positions)
     # Debug: Show what's in rows 16 and 17 around column 10
     log.append("--- FIXED LOCATION DEBUG ---")
-    if len(df) > 16 and len(df.columns) > 10:
+    if len(df) > 16 and len(df.columns) > 12:
         # Show row 16 (0-indexed: 15)
         row16_values = []
-        for c in range(max(0, 6), min(12, len(df.columns))):  # cols 7-12
+        for c in range(max(0, 6), min(14, len(df.columns))):  # cols 7-14
             val = df.iloc[15, c]
             row16_values.append(f"col{c+1}='{val}' (type:{type(val).__name__})")
         log.append(f"Row 16: {', '.join(row16_values)}")
         
         # Show row 17 (0-indexed: 16)
         row17_values = []
-        for c in range(max(0, 6), min(12, len(df.columns))):  # cols 7-12
+        for c in range(max(0, 6), min(14, len(df.columns))):  # cols 7-14
             val = df.iloc[16, c]
             row17_values.append(f"col{c+1}='{val}' (type:{type(val).__name__})")
         log.append(f"Row 17: {', '.join(row17_values)}")
     
-    # Holdback Percentage / Monthly Holdback: Row 16, Column 10 (0-indexed: row 15, col 9)
-    if len(df) > 15 and len(df.columns) > 9:
-        holdback_raw = df.iloc[15, 9]  # Row 16, Col 10
-        log.append(f"Holdback raw value at [15,9]: '{holdback_raw}' (type: {type(holdback_raw).__name__})")
-        parsed_holdback = parse_numeric(holdback_raw)
-        log.append(f"Holdback parsed: {parsed_holdback}")
-        
-        # Check if it's a decimal (like 0.10 for 10%)
-        if 0 < parsed_holdback < 1:
-            info['holdback_percentage'] = parsed_holdback * 100  # Convert to percentage
-            log.append(f"Converted decimal to percentage: {info['holdback_percentage']}%")
-        elif parsed_holdback > 0:
-            if parsed_holdback < 100:
-                info['holdback_percentage'] = parsed_holdback
-            else:
-                info['monthly_holdback'] = parsed_holdback
-            log.append(f"Set holdback: {parsed_holdback}")
+    # Holdback Percentage / Monthly Holdback: Scan columns 9-12 on row 16 (0-indexed: 15)
+    # Handle compound strings like "10% / $4,500" or merged cells
+    if len(df) > 15:
+        log.append("Searching for Holdback values in row 16, cols 9-12...")
+        for col_idx in range(8, min(13, len(df.columns))):  # cols 9-13 (0-indexed: 8-12)
+            cell_val = df.iloc[15, col_idx]
+            if pd.notna(cell_val):
+                cell_str = str(cell_val).strip()
+                log.append(f"  Col {col_idx+1}: '{cell_str}'")
+                
+                # Check for compound format with "/" separator (e.g., "10% / $4,500")
+                if '/' in cell_str:
+                    parts = cell_str.split('/')
+                    for part in parts:
+                        part = part.strip()
+                        parsed_part = parse_numeric(part)
+                        if parsed_part > 0:
+                            # Determine if it's a percentage or dollar amount
+                            if '%' in part or (parsed_part < 100 and '$' not in part):
+                                if 0 < parsed_part < 1:
+                                    info['holdback_percentage'] = parsed_part * 100
+                                else:
+                                    info['holdback_percentage'] = parsed_part
+                                log.append(f"  Found holdback percentage: {info['holdback_percentage']}%")
+                            elif '$' in part or parsed_part >= 100:
+                                info['monthly_holdback'] = parsed_part
+                                log.append(f"  Found monthly holdback: ${info['monthly_holdback']:,.2f}")
+                else:
+                    # Single value - determine if percentage or dollar amount
+                    parsed_val = parse_numeric(cell_val)
+                    if parsed_val > 0:
+                        if 0 < parsed_val < 1:
+                            info['holdback_percentage'] = parsed_val * 100
+                            log.append(f"  Found holdback (converted decimal): {info['holdback_percentage']}%")
+                        elif parsed_val < 100:
+                            info['holdback_percentage'] = parsed_val
+                            log.append(f"  Found holdback percentage: {parsed_val}%")
+                        else:
+                            info['monthly_holdback'] = parsed_val
+                            log.append(f"  Found monthly holdback: ${parsed_val:,.2f}")
     
-    # Monthly Payment to Income %: Row 17, Column 10 (0-indexed: row 16, col 9)
-    if len(df) > 16 and len(df.columns) > 9:
-        pti_raw = df.iloc[16, 9]  # Row 17, Col 10
-        log.append(f"Payment to Income raw value at [16,9]: '{pti_raw}' (type: {type(pti_raw).__name__})")
-        parsed_pti = parse_numeric(pti_raw)
-        log.append(f"Payment to Income parsed: {parsed_pti}")
-        
-        # Check if it's a decimal (like 0.25 for 25%)
-        if 0 < parsed_pti < 1:
-            info['monthly_payment_to_income_pct'] = parsed_pti * 100
-            log.append(f"Converted decimal to percentage: {info['monthly_payment_to_income_pct']}%")
-        elif parsed_pti > 0:
-            info['monthly_payment_to_income_pct'] = parsed_pti
-            log.append(f"Set payment to income %: {parsed_pti}")
+    # Monthly Payment to Income %: Scan columns 9-12 on row 17 (0-indexed: 16)
+    if len(df) > 16:
+        log.append("Searching for Payment to Income % in row 17, cols 9-12...")
+        for col_idx in range(8, min(13, len(df.columns))):  # cols 9-13 (0-indexed: 8-12)
+            cell_val = df.iloc[16, col_idx]
+            if pd.notna(cell_val):
+                cell_str = str(cell_val).strip()
+                log.append(f"  Col {col_idx+1}: '{cell_str}'")
+                
+                parsed_val = parse_numeric(cell_val)
+                if parsed_val > 0:
+                    # Check if it's a decimal (like 0.25 for 25%)
+                    if 0 < parsed_val < 1:
+                        info['monthly_payment_to_income_pct'] = parsed_val * 100
+                        log.append(f"  Found payment to income (converted decimal): {info['monthly_payment_to_income_pct']}%")
+                        break
+                    else:
+                        info['monthly_payment_to_income_pct'] = parsed_val
+                        log.append(f"  Found payment to income %: {parsed_val}%")
+                        break
     
     return info
 
@@ -408,6 +440,99 @@ def parse_weekly_positions(df: pd.DataFrame, log: List[str]) -> List[Dict[str, A
         data_row += 1
     
     log.append(f"Found {len(positions)} weekly positions")
+    return positions
+
+
+def parse_monthly_positions_non_mca(df: pd.DataFrame, log: List[str]) -> List[Dict[str, Any]]:
+    """Parse the Monthly Positions (non MCA) section.
+    
+    Layout (user confirmed):
+    Row 26: Monthly Positions (non MCA) | [headers if any]
+    Row 27+: Data rows with columns 3-4 as name, column 5 as monthly payment
+    
+    Note: This section may have headers on row 26 or start data on row 27
+    Column 2 = section label area
+    Columns 3-4 = Name (may span 2 columns)
+    Column 5 = Monthly Payment
+    """
+    positions = []
+    
+    # Find "Monthly Positions" header (non MCA)
+    location = find_cell_location(df, ['monthly positions'])
+    if not location:
+        log.append("Could not find 'Monthly Positions (non MCA)' section")
+        return positions
+    
+    header_row, start_col = location
+    log.append(f"Found 'Monthly Positions (non MCA)' at row {header_row+1}, col {start_col+1}")
+    
+    # Debug: Show what's in the header row
+    row_preview = []
+    for c in range(max(0, start_col), min(start_col + 8, len(df.columns))):
+        val = df.iloc[header_row, c] if pd.notna(df.iloc[header_row, c]) else ''
+        row_preview.append(f"col{c+1}='{val}'")
+    log.append(f"  Header row content: {', '.join(row_preview)}")
+    
+    # Per user: columns 3-4 = name, column 5 = monthly payment (0-indexed: cols 2-3 = name, col 4 = payment)
+    # But we need to adjust based on where the section header is found
+    name_col_1 = 2  # Column 3 (0-indexed: 2)
+    name_col_2 = 3  # Column 4 (0-indexed: 3)
+    payment_col = 4  # Column 5 (0-indexed: 4)
+    
+    log.append(f"  Using fixed columns: Name cols {name_col_1+1}-{name_col_2+1}, Payment col {payment_col+1}")
+    
+    # Data starts on row BELOW the header
+    data_row = header_row + 1
+    
+    # Debug: Show first data row
+    if data_row < len(df):
+        data_row_preview = []
+        for c in range(max(0, name_col_1), min(payment_col + 2, len(df.columns))):
+            val = df.iloc[data_row, c] if pd.notna(df.iloc[data_row, c]) else ''
+            data_row_preview.append(f"col{c+1}='{val}'")
+        log.append(f"  First data row ({data_row+1}) content: {', '.join(data_row_preview)}")
+    
+    while data_row < len(df):
+        # Get name from columns 3-4 (concatenate if both have values)
+        name_part1 = df.iloc[data_row, name_col_1] if name_col_1 < len(df.columns) and pd.notna(df.iloc[data_row, name_col_1]) else ''
+        name_part2 = df.iloc[data_row, name_col_2] if name_col_2 < len(df.columns) and pd.notna(df.iloc[data_row, name_col_2]) else ''
+        
+        name_part1 = str(name_part1).strip() if name_part1 else ''
+        name_part2 = str(name_part2).strip() if name_part2 else ''
+        
+        # Combine name parts
+        if name_part1 and name_part2:
+            name_value = f"{name_part1} {name_part2}"
+        elif name_part1:
+            name_value = name_part1
+        elif name_part2:
+            name_value = name_part2
+        else:
+            name_value = ''
+        
+        # Stop if name is empty
+        if not name_value:
+            break
+        
+        # Stop if we hit another section
+        first_col_value = str(df.iloc[data_row, start_col]).lower() if pd.notna(df.iloc[data_row, start_col]) else ''
+        if any(term in first_col_value for term in ['bank account', 'bank accoount', 'total revenues', 'deduction']):
+            break
+        
+        # Get monthly payment from column 5
+        monthly_payment = parse_numeric(df.iloc[data_row, payment_col]) if payment_col < len(df.columns) else 0.0
+        
+        position = {
+            'name': name_value,
+            'amount': 0.0,  # No amount column for this section
+            'monthly_payment': monthly_payment
+        }
+        positions.append(position)
+        log.append(f"  Position: {position['name']} - Monthly Payment: ${position['monthly_payment']:,.2f}")
+        
+        data_row += 1
+    
+    log.append(f"Found {len(positions)} monthly (non MCA) positions")
     return positions
 
 
@@ -704,6 +829,17 @@ def format_extracted_data_for_display(data: Dict[str, Any]) -> str:
             lines.append(f"  {pos['name']}: Amount=${pos['amount']:,.2f}, Monthly=${pos['monthly_payment']:,.2f}")
     else:
         lines.append("  (No weekly positions found)")
+    
+    lines.append("")
+    lines.append("=" * 60)
+    lines.append("📆 MONTHLY POSITIONS (NON MCA)")
+    lines.append("=" * 60)
+    monthly_non_mca = data.get('monthly_positions_non_mca', [])
+    if monthly_non_mca:
+        for pos in monthly_non_mca:
+            lines.append(f"  {pos['name']}: Monthly=${pos['monthly_payment']:,.2f}")
+    else:
+        lines.append("  (No monthly non-MCA positions found)")
     
     lines.append("")
     lines.append("=" * 60)
