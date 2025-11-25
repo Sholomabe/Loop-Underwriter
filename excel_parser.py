@@ -223,25 +223,55 @@ def parse_info_needed_section(df: pd.DataFrame, log: List[str]) -> Dict[str, Any
             log.append(f"Could not find: {field_name}")
     
     # Override with fixed locations for specific fields (user confirmed exact positions)
+    # Debug: Show what's in rows 16 and 17 around column 10
+    log.append("--- FIXED LOCATION DEBUG ---")
+    if len(df) > 16 and len(df.columns) > 10:
+        # Show row 16 (0-indexed: 15)
+        row16_values = []
+        for c in range(max(0, 6), min(12, len(df.columns))):  # cols 7-12
+            val = df.iloc[15, c]
+            row16_values.append(f"col{c+1}='{val}' (type:{type(val).__name__})")
+        log.append(f"Row 16: {', '.join(row16_values)}")
+        
+        # Show row 17 (0-indexed: 16)
+        row17_values = []
+        for c in range(max(0, 6), min(12, len(df.columns))):  # cols 7-12
+            val = df.iloc[16, c]
+            row17_values.append(f"col{c+1}='{val}' (type:{type(val).__name__})")
+        log.append(f"Row 17: {', '.join(row17_values)}")
+    
     # Holdback Percentage / Monthly Holdback: Row 16, Column 10 (0-indexed: row 15, col 9)
     if len(df) > 15 and len(df.columns) > 9:
-        holdback_value = df.iloc[15, 9]  # Row 16, Col 10
-        parsed_holdback = parse_numeric(holdback_value)
-        if parsed_holdback > 0:
-            # Determine if it's a percentage or dollar amount
-            if parsed_holdback < 100:  # Likely a percentage
+        holdback_raw = df.iloc[15, 9]  # Row 16, Col 10
+        log.append(f"Holdback raw value at [15,9]: '{holdback_raw}' (type: {type(holdback_raw).__name__})")
+        parsed_holdback = parse_numeric(holdback_raw)
+        log.append(f"Holdback parsed: {parsed_holdback}")
+        
+        # Check if it's a decimal (like 0.10 for 10%)
+        if 0 < parsed_holdback < 1:
+            info['holdback_percentage'] = parsed_holdback * 100  # Convert to percentage
+            log.append(f"Converted decimal to percentage: {info['holdback_percentage']}%")
+        elif parsed_holdback > 0:
+            if parsed_holdback < 100:
                 info['holdback_percentage'] = parsed_holdback
-            else:  # Likely a dollar amount
+            else:
                 info['monthly_holdback'] = parsed_holdback
-            log.append(f"Fixed location - Row 16, Col 10: {parsed_holdback}")
+            log.append(f"Set holdback: {parsed_holdback}")
     
     # Monthly Payment to Income %: Row 17, Column 10 (0-indexed: row 16, col 9)
     if len(df) > 16 and len(df.columns) > 9:
-        pmt_to_income = df.iloc[16, 9]  # Row 17, Col 10
-        parsed_pti = parse_numeric(pmt_to_income)
-        if parsed_pti > 0:
+        pti_raw = df.iloc[16, 9]  # Row 17, Col 10
+        log.append(f"Payment to Income raw value at [16,9]: '{pti_raw}' (type: {type(pti_raw).__name__})")
+        parsed_pti = parse_numeric(pti_raw)
+        log.append(f"Payment to Income parsed: {parsed_pti}")
+        
+        # Check if it's a decimal (like 0.25 for 25%)
+        if 0 < parsed_pti < 1:
+            info['monthly_payment_to_income_pct'] = parsed_pti * 100
+            log.append(f"Converted decimal to percentage: {info['monthly_payment_to_income_pct']}%")
+        elif parsed_pti > 0:
             info['monthly_payment_to_income_pct'] = parsed_pti
-            log.append(f"Fixed location - Monthly Payment to Income % (Row 17, Col 10): {parsed_pti}")
+            log.append(f"Set payment to income %: {parsed_pti}")
     
     return info
 
