@@ -295,6 +295,23 @@ Provide a comprehensive underwriting analysis and recommendation."""
         print(f"Error generating underwriting summary: {e}")
         return f"Error generating summary: {str(e)}"
 
+def safe_float_compare(value, default=0.0) -> float:
+    """Safely convert a value to float for comparison."""
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        cleaned = value.replace('$', '').replace(',', '').replace('%', '').strip()
+        if cleaned == '' or cleaned == '-':
+            return default
+        try:
+            return float(cleaned)
+        except ValueError:
+            return default
+    return default
+
+
 def adversarial_correction_prompt(
     ai_result: Dict,
     human_truth: Dict,
@@ -307,19 +324,50 @@ def adversarial_correction_prompt(
     interrogation questions.
     
     Args:
-        ai_result: AI's original analysis
-        human_truth: Human-provided correct values
+        ai_result: AI's original analysis (new nested structure with info_needed)
+        human_truth: Human-provided correct values (from Excel parser)
         transactions_data: List of transactions for investigation
     
     Returns:
         AI's correction report
     """
-    # Calculate differences
     differences = []
-    for key in human_truth:
-        if key in ai_result and ai_result[key] != human_truth[key]:
-            diff_amount = human_truth[key] - ai_result[key]
-            differences.append(f"- {key}: You said ${ai_result[key]:,.2f}, Human says ${human_truth[key]:,.2f} (Difference: ${diff_amount:,.2f})")
+    
+    # Get AI's info_needed (handle both old flat format and new nested format)
+    ai_info = ai_result.get('info_needed', ai_result)
+    human_info = human_truth.get('info_needed', human_truth)
+    
+    # Compare info_needed metrics
+    info_needed_fields = [
+        'total_monthly_payments', 'diesel_total_monthly_payments', 
+        'total_monthly_payments_with_diesel', 'average_monthly_income',
+        'annual_income', 'length_of_deal_months', 'holdback_percentage',
+        'monthly_holdback', 'monthly_payment_to_income_pct',
+        'original_balance_to_annual_income_pct'
+    ]
+    
+    for field in info_needed_fields:
+        ai_val = safe_float_compare(ai_info.get(field, 0))
+        human_val = safe_float_compare(human_info.get(field, 0))
+        if abs(ai_val - human_val) > 0.01:  # Allow small tolerance
+            diff = human_val - ai_val
+            if 'pct' in field or 'percentage' in field:
+                differences.append(f"- {field}: You said {ai_val:.2f}%, Human says {human_val:.2f}% (Difference: {diff:.2f}%)")
+            else:
+                differences.append(f"- {field}: You said ${ai_val:,.2f}, Human says ${human_val:,.2f} (Difference: ${diff:,.2f})")
+    
+    # Compare positions counts
+    for pos_type in ['daily_positions', 'weekly_positions', 'monthly_positions_non_mca']:
+        ai_positions = ai_result.get(pos_type, [])
+        human_positions = human_truth.get(pos_type, [])
+        if len(ai_positions) != len(human_positions):
+            differences.append(f"- {pos_type}: You found {len(ai_positions)} positions, Human truth has {len(human_positions)}")
+    
+    # Compare bank accounts
+    ai_accounts = ai_result.get('bank_accounts', {})
+    human_accounts = human_truth.get('bank_accounts', {})
+    if len(ai_accounts) != len(human_accounts):
+        differences.append(f"- Bank Accounts: You found {len(ai_accounts)} accounts, Human truth has {len(human_accounts)}")
     
     if not differences:
         return "No significant differences found."
