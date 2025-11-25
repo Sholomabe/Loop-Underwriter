@@ -2,6 +2,25 @@ import pandas as pd
 from datetime import datetime, timedelta
 from typing import List, Dict, Tuple
 
+
+def safe_float(value, default=0.0) -> float:
+    """Safely convert a value to float, handling strings and None."""
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        # Remove currency symbols and commas
+        cleaned = value.replace('$', '').replace(',', '').replace(' ', '').strip()
+        if cleaned == '' or cleaned == '-':
+            return default
+        try:
+            return float(cleaned)
+        except ValueError:
+            return default
+    return default
+
+
 def find_inter_account_transfers(
     transactions: List[Dict],
     window_days: int = 2
@@ -35,6 +54,9 @@ def find_inter_account_transfers(
             print(f"Warning: Required column '{col}' not found in transactions")
             return transactions
     
+    # Convert amount column to float (handling string amounts like "$1,234.56")
+    df['amount'] = df['amount'].apply(safe_float)
+    
     # Convert date strings to datetime if needed
     if df['transaction_date'].dtype == 'object':
         df['transaction_date'] = pd.to_datetime(df['transaction_date'], errors='coerce')
@@ -54,7 +76,7 @@ def find_inter_account_transfers(
         if row['id'] in matched_ids:
             continue
         
-        amount = row['amount']
+        amount = row['amount']  # Now already a float
         date = row['transaction_date']
         account = row['source_account_id']
         
@@ -108,11 +130,12 @@ def calculate_revenue_excluding_transfers(transactions: List[Dict]) -> float:
     total_revenue = 0.0
     
     for txn in transactions:
-        # Only count credits (positive amounts)
-        if txn.get('amount', 0) > 0:
+        # Only count credits (positive amounts) - safely convert to float
+        amount = safe_float(txn.get('amount', 0))
+        if amount > 0:
             # Exclude internal transfers
             if not txn.get('is_internal_transfer', False):
-                total_revenue += txn['amount']
+                total_revenue += amount
     
     return total_revenue
 
@@ -124,7 +147,7 @@ def get_transfer_summary(transactions: List[Dict]) -> Dict:
         Dict with transfer statistics
     """
     total_transfers = sum(1 for txn in transactions if txn.get('is_internal_transfer', False))
-    transfer_amount = sum(abs(txn.get('amount', 0)) for txn in transactions if txn.get('is_internal_transfer', False))
+    transfer_amount = sum(abs(safe_float(txn.get('amount', 0))) for txn in transactions if txn.get('is_internal_transfer', False))
     
     # Get unique transfer pairs
     transfer_pairs = set()

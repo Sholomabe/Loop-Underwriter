@@ -2,6 +2,25 @@ from typing import Dict, Tuple, Optional
 from openai_integration import extract_financial_data_from_pdf
 from transfer_hunter import calculate_revenue_excluding_transfers
 
+
+def safe_float(value, default=0.0) -> float:
+    """Safely convert a value to float, handling strings and None."""
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        # Remove currency symbols and commas
+        cleaned = value.replace('$', '').replace(',', '').replace(' ', '').strip()
+        if cleaned == '' or cleaned == '-':
+            return default
+        try:
+            return float(cleaned)
+        except ValueError:
+            return default
+    return default
+
+
 def verify_extraction_math(extracted_data: Dict, transactions: list) -> Tuple[bool, Optional[str]]:
     """
     Perform mathematical verification on extracted data.
@@ -23,9 +42,9 @@ def verify_extraction_math(extracted_data: Dict, transactions: list) -> Tuple[bo
     if not transactions:
         return True, None  # No transactions to verify
     
-    # Calculate sum of all transactions
-    total_credits = sum(t['amount'] for t in transactions if t.get('amount', 0) > 0)
-    total_debits = sum(abs(t['amount']) for t in transactions if t.get('amount', 0) < 0)
+    # Calculate sum of all transactions (safely convert amounts to float)
+    total_credits = sum(safe_float(t.get('amount', 0)) for t in transactions if safe_float(t.get('amount', 0)) > 0)
+    total_debits = sum(abs(safe_float(t.get('amount', 0))) for t in transactions if safe_float(t.get('amount', 0)) < 0)
     
     # Calculate revenue excluding transfers
     revenue_excluding_transfers = calculate_revenue_excluding_transfers(transactions)
