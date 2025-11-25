@@ -218,10 +218,10 @@ def verify_extraction_math(extracted_data: Dict, transactions: list) -> Tuple[bo
                         f"Remember: Use the 'type' field to identify credits."
                     )
     
-    # VALIDATION 4: Check position detection
+    # VALIDATION 4: Check position detection using actual clustering
     daily_positions = extracted_data.get('daily_positions', [])
-    if len(daily_positions) == 0 and type_analysis['debit_count'] >= 5:
-        # Use actual clustering to detect if there are repeating patterns
+    if len(daily_positions) == 0:
+        # Use actual clustering to detect if there are repeating daily patterns
         detected_clusters = cluster_positions_by_merchant(transactions)
         daily_clusters = [c for c in detected_clusters if c.get('frequency') == 'daily']
         
