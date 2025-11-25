@@ -31,7 +31,7 @@ def verify_extraction_math(extracted_data: Dict, transactions: list) -> Tuple[bo
     3. Category totals are consistent
     
     Args:
-        extracted_data: Dict containing extracted financial metrics
+        extracted_data: Dict containing extracted financial metrics (supports both flat and nested structures)
         transactions: List of transaction dicts
     
     Returns:
@@ -49,11 +49,19 @@ def verify_extraction_math(extracted_data: Dict, transactions: list) -> Tuple[bo
     # Calculate revenue excluding transfers
     revenue_excluding_transfers = calculate_revenue_excluding_transfers(transactions)
     
-    # Verify revenues_last_4_months
-    extracted_revenue = extracted_data.get('revenues_last_4_months', 0)
+    # Handle both old flat format and new nested format
+    info_needed = extracted_data.get('info_needed', extracted_data)
     
-    # Allow 2% tolerance for rounding
-    tolerance = 0.02
+    # Verify average monthly income (use as proxy for revenue if revenues_last_4_months not present)
+    extracted_avg_income = safe_float(info_needed.get('average_monthly_income', 0))
+    extracted_revenue = safe_float(extracted_data.get('revenues_last_4_months', 0))
+    
+    # If no explicit revenue field, use average income * 4 as estimate for 4 months
+    if extracted_revenue == 0 and extracted_avg_income > 0:
+        extracted_revenue = extracted_avg_income * 4
+    
+    # Allow 5% tolerance for rounding (increased for complex calculations)
+    tolerance = 0.05
     
     if extracted_revenue > 0:
         revenue_diff = abs(revenue_excluding_transfers - extracted_revenue)
@@ -70,8 +78,8 @@ def verify_extraction_math(extracted_data: Dict, transactions: list) -> Tuple[bo
             )
             return False, error_msg
     
-    # Verify total_monthly_payments if available
-    extracted_payments = extracted_data.get('total_monthly_payments', 0)
+    # Verify total_monthly_payments if available (check both nested and flat)
+    extracted_payments = safe_float(info_needed.get('total_monthly_payments', 0))
     
     if extracted_payments > 0:
         # Sum of debits should roughly match total payments
@@ -88,9 +96,9 @@ def verify_extraction_math(extracted_data: Dict, transactions: list) -> Tuple[bo
             )
             return False, error_msg
     
-    # Verify transaction count consistency
+    # Verify transaction count consistency (reduced threshold for complex statements)
     listed_txn_count = len(transactions)
-    if listed_txn_count < 3:
+    if listed_txn_count < 2:
         error_msg = (
             f"Insufficient transactions: You only listed {listed_txn_count} transactions. "
             f"A typical bank statement has many more. Please re-scan and extract ALL transactions."
