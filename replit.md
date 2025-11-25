@@ -1,324 +1,44 @@
 # Human-in-the-Loop Underwriting Platform
 
 ## Overview
-A comprehensive AI-powered underwriting platform that combines automated document processing with human oversight and continuous learning. The system uses OpenAI's Vision API for document extraction, implements intelligent retry mechanisms, detects duplicate submissions, and learns from human corrections to improve over time.
-
-## Architecture
-
-### Tech Stack
-- **Frontend**: Streamlit (Multi-page application)
-- **Backend**: Flask (Webhook server for email ingestion)
-- **Database**: PostgreSQL (Replit-hosted)
-- **AI/ML**: OpenAI GPT-4o (Vision) and GPT-5 (via Replit AI Integrations)
-- **Document Processing**: PyPDF2, Pillow, pytesseract
-
-### Database Schema
-
-#### Core Tables
-1. **Deals** - Main deal records with status tracking
-   - Stores extracted financial data (JSON)
-   - Tracks AI reasoning logs
-   - Links to duplicate deals
-   - Status: Pending Approval, Needs Human Review, Underwritten, Approved, Rejected, Duplicate
-
-2. **PDFFiles** - Uploaded bank statement PDFs
-   - SHA-256 hash for duplicate detection
-   - Account number extraction
-   - Links to parent Deal
-
-3. **Transactions** - Individual financial transactions
-   - Multi-account support (source_account_id)
-   - Transfer detection flags (is_internal_transfer)
-   - Category classification (income, diesel, payment, etc.)
-
-4. **TrainingExamples** - Human corrections for AI learning
-   - Stores original AI output vs. corrected values
-   - Used for few-shot learning in future analyses
-
-5. **GoldStandard_Rules** - RAG-based pattern memory
-   - Learned classification rules
-   - Pattern matching for transaction categorization
-   - Applied automatically to new deals
-
-6. **Settings** - Dynamic configuration
-   - Underwriting rules (min_annual_income, holdback_percentage, etc.)
-   - System settings (max_retry_attempts, transfer_detection_window_days)
-   - AI model configurations
-
-## Key Features
-
-### 1. Email Ingestion Pipeline
-- **Endpoint**: `POST /incoming-email` (port 8080)
-- Accepts JSON payloads with sender, subject, body, and PDF attachments
-- Automatic SHA-256 hash calculation for duplicate detection
-- Links duplicate submissions to original deals
-
-### 2. Multi-Account Intelligence
-- **Account Separator**: OCR scans top 20% of PDF to extract account numbers
-- Automatically merges PDFs with matching account numbers
-- Flags PDFs with no account number as "Unknown Source"
-- Supports manual account tagging in UI
-
-### 3. Transfer Hunter Algorithm
-- Detects inter-account transfers using pattern matching:
-  - Transaction A: Amount = -X, Date = T, Account = 1
-  - Transaction B: Amount = +X, Date = T ±2 days, Account = 2
-- Marks both transactions with `is_internal_transfer = True`
-- Excludes internal transfers from revenue calculations
-- Configurable detection window (default: 2 days)
-
-### 4. Auto-Retry Verification Loop
-- **Initial Extraction**: OpenAI Vision API extracts financial data
-- **Math Verification**: Python validates sums match extracted totals
-- **Intelligent Retry**: On failure, sends specific error feedback to AI
-  - Example: "You extracted $50,000 but row sum is $48,500 - find the missing $1,500"
-- **Max 2 Retries**: After 2 failed attempts, flags for human review
-- Status outcomes: "Pending Approval" or "Needs Human Review"
-
-### 5. Few-Shot Learning System
-- Queries 3 most recent TrainingExamples before analysis
-- Includes corrections in system prompt as examples
-- AI learns from past mistakes automatically
-- Improves accuracy over time
-
-### 6. Forensic Trainer (Adversarial Training)
-- **Split-Screen UI**:
-  - Left: Uploaded PDFs (tabbed by account)
-  - Center: AI reasoning log with exclusion explanations
-  - Right: Truth form for correct values
-- **Adversarial Feedback Loop**:
-  1. Blind AI analysis
-  2. Compare AI results vs. human truth
-  3. Auto-generate interrogation prompt with specific errors
-  4. AI conducts self-audit and generates correction report
-- **Pattern Learning**: Save learned patterns to GoldStandard_Rules
-
-### 7. Pattern Memory (RAG)
-- Stores reusable classification rules
-- Example: "Zelle from John Doe" → Income (not Transfer)
-- Applied automatically to matching transactions in future deals
-- Confidence scoring and success tracking
-
-## Application Structure
-
-### Streamlit Pages
-1. **Home** (`app.py`) - Dashboard with quick stats and navigation
-2. **Inbox** (`pages/1_📥_Inbox.py`) - Deal listing with status filters
-3. **Deal Details** (`pages/2_📄_Deal_Details.py`) - Side-by-side PDF viewer and extracted data with correction interface
-4. **Forensic Trainer** (`pages/3_🔬_Forensic_Trainer.py`) - Adversarial training system
-5. **Configuration** (`pages/4_⚙️_Configuration.py`) - Dynamic rule management
-
-### Core Modules
-- `database.py` - SQLAlchemy connection and session management
-- `models.py` - Database models and relationships
-- `pdf_processor.py` - PDF hashing, OCR, account extraction
-- `openai_integration.py` - Vision API, underwriting summaries, adversarial corrections
-- `transfer_hunter.py` - Inter-account transfer detection
-- `verification.py` - Auto-retry loop with math verification
-- `webhook_server.py` - Flask email ingestion endpoint
-- `init_database.py` - Database initialization script
-
-## Running the Application
-
-### Workflows
-1. **Streamlit App** - Port 5000 (webview)
-   - `streamlit run app.py --server.port 5000`
-   
-2. **Flask Webhook Server** - Port 8080 (console)
-   - `python webhook_server.py`
-
-### Initial Setup
-```bash
-# Initialize database (run once)
-python init_database.py
-```
-
-## API Endpoints
-
-### Webhook Endpoint
-```
-POST http://localhost:8080/incoming-email
-
-Payload:
-{
-  "sender": "sender@example.com",
-  "subject": "Bank Statement",
-  "body": "Email body text",
-  "attachments": [
-    {
-      "filename": "statement.pdf",
-      "content": "<base64 encoded PDF>"
-    }
-  ]
-}
-
-Response:
-{
-  "status": "success|duplicate",
-  "deal_id": 123,
-  "final_status": "Pending Approval|Needs Human Review",
-  "retry_count": 0,
-  "account_number": "1234"
-}
-```
-
-### Health Check
-```
-GET http://localhost:8080/health
-
-Response:
-{
-  "status": "healthy",
-  "service": "underwriting-webhook"
-}
-```
-
-## Configuration Settings
-
-### Underwriting Rules
-- `min_annual_income`: Minimum annual income threshold (default: $100,000)
-- `holdback_percentage`: Percentage holdback (default: 10%)
-- `max_nsf_count`: Maximum NSF count allowed (default: 3)
-- `min_monthly_revenue`: Minimum monthly revenue (default: $20,000)
-- `diesel_threshold`: Diesel payment threshold (default: $5,000)
-
-### System Configuration
-- `max_retry_attempts`: Maximum AI retry attempts (default: 2)
-- `transfer_detection_window_days`: Days to search for matching transfers (default: 2)
-- `ai_model`: Vision API model (default: gpt-4o)
-- `ai_summary_model`: Summary generation model (default: gpt-5)
-
-## Workflow Examples
-
-### Deal Processing Flow
-1. Email arrives at webhook endpoint
-2. PDF hash calculated, checked for duplicates
-3. Account number extracted from PDF
-4. OpenAI Vision extracts financial data
-5. Math verification checks accuracy
-6. If fails: Retry with specific error feedback (max 2x)
-7. Transfer Hunter identifies inter-account transfers
-8. Status set to "Pending Approval" or "Needs Human Review"
-9. Deal appears in Inbox dashboard
-
-### Human Correction Flow
-1. Underwriter reviews deal in Deal Details page
-2. Identifies AI error and corrects values
-3. Clicks "Save Corrections & Train AI"
-4. Correction saved to TrainingExamples table
-5. AI uses this example in future few-shot learning
-
-### Adversarial Training Flow
-1. Upload historical deal with known truth values
-2. AI analyzes blindly
-3. System compares AI vs. truth
-4. Generate adversarial prompt: "You said X, human says Y - find the error"
-5. AI conducts self-audit
-6. Save learned pattern to GoldStandard_Rules
-7. Pattern automatically applied to future deals
-
-## AI Integration Details
-
-### OpenAI Models Used
-- **GPT-4o**: Vision API for PDF document extraction
-  - Supports both text and image analysis
-  - Returns structured JSON with financial metrics
-  
-- **GPT-5**: Underwriting summaries and adversarial corrections
-  - Incorporates few-shot examples from TrainingExamples
-  - Applies patterns from GoldStandard_Rules
-  - Generates detailed reasoning logs
-
-### Replit AI Integrations
-- No OpenAI API key required
-- Charges billed to Replit credits
-- Fully compatible OpenAI SDK interface
-
-## Data Security
-
-### Duplicate Prevention
-- SHA-256 hashing of all PDF files
-- Database-level unique constraint on file_hash
-- Automatic linking to original deal when duplicate detected
-
-### Database Management
-- Development database accessible via tools
-- Production database requires manual management via Replit UI
-- Never expose DATABASE_URL or credentials
-
-## Future Enhancements
-
-### Suggested Next Steps (from Architect Review)
-1. **Automated Tests**: Add unit and integration tests for webhook, transfer detection, and retry loop
-2. **Enhanced Logging**: Improve error handling and observability for OpenAI and PDF processing
-3. **Demo Data**: Seed example deals for demonstration purposes
-4. **Advanced Transfer Patterns**: Detect partial matches, recurring transfers, split transactions
-5. **Analytics Dashboard**: Track AI accuracy metrics and improvement trends
-
-### Potential Features
-- Bulk processing for multiple email submissions
-- Role-based access control
-- Export functionality (PDF reports)
-- Collaborative review workflow
-- Additional document types (tax returns, invoices)
-
-## Recent Changes
-- **2024-11-24**: Initial implementation of complete platform
-  - Database schema with all 6 tables
-  - Flask webhook server with duplicate detection
-  - Multi-account support and transfer detection
-  - Auto-retry verification loop (max 2 retries)
-  - Streamlit 4-page dashboard
-  - Forensic Trainer with adversarial feedback
-  - RAG-based pattern memory system
-  - Dynamic configuration management
-  
-- **2024-11-24**: Bug fixes and feature additions
-  - Fixed file upload 403 errors by configuring Streamlit properly (maxUploadSize, maxMessageSize)
-  - Fixed SQLAlchemy DetachedInstanceError in Configuration page with fresh session per save
-  - Added Excel file upload for truth values in Forensic Trainer (.xlsx/.xls support)
-  - Implemented intelligent column name matching for Excel (case-insensitive, flexible)
-  - Fixed radio button UX - moved outside form for immediate mode switching
-  - Maintained security by keeping XSRF and CORS protection enabled
-
-- **2024-11-25**: Comprehensive AI extraction matching truth Excel structure
-  - **Enhanced OpenAI extraction prompt** to request all fields matching the underwriting Excel:
-    - 10 info_needed metrics (total monthly payments, diesel, holdback %, payment-to-income %, etc.)
-    - Daily/Weekly/Monthly positions with name, amount, and monthly payment
-    - Bank account data with per-month breakdowns (income, deductions, net revenue)
-    - Total revenues by month and deductions matrix
-  - **Added safe_float() helper** to verification.py and transfer_hunter.py for string-to-numeric conversions
-  - **Fixed TypeError** in adversarial training when comparing string amounts to integers
-  - **Updated Forensic Trainer** with comprehensive comparison:
-    - Side-by-side table comparing all 10 info_needed metrics
-    - Positions count comparison (daily, weekly, monthly)
-    - Bank accounts comparison
-    - Match/mismatch indicators for each field
-  - **Updated adversarial_correction_prompt** to handle nested data structure and compare all fields
-
-- **2024-11-25**: Underwriting Logic Fixes (4 improvements)
-  - **Refined Transfer Logic (Revenue Fix):**
-    - Only exclude deposits as "Internal Transfers" if description explicitly says "Online Transfer from Chk..." or "Intra-bank Transfer"
-    - Added is_explicit_internal_transfer() and is_related_entity_revenue() functions
-    - Related entities (e.g., "Big World Enterprises" -> "Big World Travel") now treated as REVENUE
-  - **Debt Identification (Small Lenders):**
-    - Added KNOWN_LENDER_KEYWORDS list (financing, capital, funding, advance, lending, etc.)
-    - Added is_known_lender_payment() function to detect lender payments
-    - Updated OpenAI prompt to include lender detection instructions
-  - **Stacking Logic (Positions):**
-    - Added detect_lender_positions() function with stacking support
-    - If same lender appears with different amounts/frequencies, both listed as separate positions
-    - Added check_for_payoff() to detect if position was refinanced
-  - **UI Update (Revenue Toggle):**
-    - Added toggle switches for excluded transfers in Deal Details page
-    - Added "Recalculate Revenue" button for instant recalculation
-    - Added "Detected Lender Positions" section showing stacked positions
+This AI-powered underwriting platform automates document processing with human oversight and continuous learning. It leverages OpenAI's Vision API for data extraction, incorporates intelligent retry mechanisms, detects duplicate submissions, and enhances its accuracy through learning from human corrections. The platform's goal is to streamline the underwriting process, reduce manual effort, and improve decision-making accuracy by combining AI efficiency with human expertise.
 
 ## User Preferences
 None specified yet.
 
-## Notes
-- The platform is fully functional and ready for testing
-- Both workflows (Streamlit + Flask) must run concurrently
-- Database must be initialized before first use
-- OpenAI integration uses Replit AI Integrations (no API key needed)
+## System Architecture
+The platform utilizes a multi-page Streamlit application for the frontend and a Flask webhook server for backend email ingestion. PostgreSQL serves as the primary database, hosted on Replit. OpenAI's GPT-4o (Vision) and GPT-5 models are integrated via Replit AI for document analysis, summarization, and adversarial learning. Core document processing relies on libraries like PyPDF2, Pillow, and pytesseract.
+
+### UI/UX Decisions
+- **Streamlit Multi-page Application**: Provides a structured interface with dedicated pages for Dashboard, Inbox, Deal Details, Forensic Trainer, and Configuration.
+- **Split-Screen UI**: The Forensic Trainer features a split-screen layout for side-by-side comparison of PDFs, AI reasoning logs, and truth forms, facilitating human corrections and adversarial training.
+- **Dynamic Configuration**: UI allows for real-time adjustments of underwriting rules and system settings without code changes.
+
+### Technical Implementations
+- **Email Ingestion Pipeline**: A Flask webhook (`POST /incoming-email` on port 8080) processes email payloads, including PDF attachments, calculates SHA-256 hashes for duplicate detection, and initiates deal creation.
+- **Multi-Account Intelligence**: OCR extracts account numbers from PDFs, enabling automatic merging of related documents and flagging of unidentified sources.
+- **Transfer Hunter Algorithm**: Detects inter-account transfers by matching debits and credits across accounts within a configurable time window, excluding them from revenue calculations. It includes logic to differentiate explicit internal transfers from revenue-generating related entity transactions.
+- **Auto-Retry Verification Loop**: After initial Vision API extraction, a Python-based math verification step ensures data accuracy. Failed verifications trigger intelligent retries with targeted feedback to the AI (max 2 attempts) before flagging for human review.
+- **Few-Shot Learning System**: The system dynamically incorporates human corrections from `TrainingExamples` into AI prompts for future analyses, improving model accuracy over time.
+- **Forensic Trainer (Adversarial Training)**: A module designed for iterative AI improvement. It compares AI output against human-provided truth data, generates specific error-based prompts for the AI to self-audit, and saves learned patterns to `GoldStandard_Rules`. This includes comprehensive comparison of all extracted metrics (info_needed, positions, bank accounts).
+- **Pattern Memory (RAG)**: Stores and applies learned classification rules (`GoldStandard_Rules`) for transaction categorization, such as identifying specific Zelle payments as income.
+- **Underwriting Logic**: Includes refined transfer logic to correctly identify revenue vs. internal transfers, debt identification using known lender keywords, and robust stacking logic for recurring positions.
+- **AI Intelligence Improvements**: Incorporates critical rules for AI prompting, such as prioritizing 'type' fields for cash flow direction, ensuring all payment debits are included in total monthly payments, clustering positions by merchant with amount tolerance, and marking income metrics as "not computable" when no credit data exists.
+
+### Feature Specifications
+- **Dynamic Configuration**: Manages underwriting rules (e.g., `min_annual_income`, `holdback_percentage`) and system settings (e.g., `max_retry_attempts`, `transfer_detection_window_days`).
+- **Data Security**: Implements SHA-256 hashing for PDF files to prevent duplicates and ensures database security by not exposing credentials.
+
+### System Design Choices
+- **Database Schema**: Structured around `Deals`, `PDFFiles`, `Transactions`, `TrainingExamples`, `GoldStandard_Rules`, and `Settings` tables, designed for comprehensive tracking and AI learning.
+- **Modularity**: Codebase is organized into distinct modules for database interaction (`database.py`, `models.py`), PDF processing (`pdf_processor.py`), AI integration (`openai_integration.py`), and core business logic (`transfer_hunter.py`, `verification.py`, `webhook_server.py`).
+
+## External Dependencies
+- **OpenAI GPT-4o (Vision)**: Used for robust PDF document extraction, supporting both text and image analysis, returning structured JSON data.
+- **OpenAI GPT-5**: Employed for generating underwriting summaries and facilitating adversarial corrections, leveraging few-shot examples and learned patterns.
+- **PostgreSQL**: The relational database management system used for storing all application data, hosted on Replit.
+- **Streamlit**: Python framework for building the interactive web application frontend.
+- **Flask**: Python micro-framework used for the backend webhook server handling email ingestion.
+- **PyPDF2**: Python library for working with PDF documents.
+- **Pillow (PIL Fork)**: Python Imaging Library used for image processing, particularly in OCR workflows.
+- **Pytesseract**: Python wrapper for Google's Tesseract-OCR Engine, used for optical character recognition on documents.

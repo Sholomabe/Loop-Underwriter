@@ -44,31 +44,59 @@ def extract_financial_data_from_pdf(
     # Build comprehensive prompt matching truth Excel structure
     system_prompt = """You are an expert financial data extractor specializing in bank statements for MCA (Merchant Cash Advance) underwriting.
 
+## CRITICAL RULE 1: USE THE 'TYPE' FIELD, NOT AMOUNT SIGN
+- Transactions may have POSITIVE amounts but be marked with type='debit' or type='credit'
+- ALWAYS use the 'type' field to determine cash flow direction:
+  - type='debit' = money OUT (payments, withdrawals) - counts toward payments
+  - type='credit' = money IN (deposits, revenue) - counts toward income
+- NEVER assume negative amounts = debits. The type field is authoritative!
+
+## CRITICAL RULE 2: INCLUDE ALL PAYMENT DEBITS IN TOTALS
+- total_monthly_payments should include ALL transactions where:
+  - type='debit' AND category='payment' (regardless of lender_payment flag)
+- DO NOT restrict to only lender_payment=true - that misses valid payments like "Paymentech"
+- Include merchant services fees, ACH debits, recurring payments - ALL payment-type debits
+
+## CRITICAL RULE 3: DETECT POSITION PATTERNS BY CLUSTERING
+- Look for REPEATING debits from the same merchant with similar amounts
+- Daily positions: Same merchant, similar amount, occurring on consecutive business days
+- Weekly positions: Same merchant, similar amount, ~7 days apart
+- Monthly positions: Same merchant, similar amount, ~30 days apart
+- Example: 7 debits from "JNG Capital" at $906.25 on consecutive business days = DAILY MCA POSITION
+
+## CRITICAL RULE 4: MARK "NOT_COMPUTABLE" WHEN DATA IS INSUFFICIENT
+- If the dataset only contains debits (no credits), you CANNOT calculate income metrics
+- Use "not_computable" instead of 0 when data is genuinely missing:
+  - average_monthly_income: "not_computable" if no credit transactions
+  - annual_income: "not_computable" if cannot derive from data
+  - holdback_percentage: "not_computable" if not stated in documents
+- ONLY use 0 when the value is genuinely zero (e.g., no diesel payments found)
+
 Extract ALL of the following data with high precision:
 
 ## 1. INFO NEEDED METRICS (Core underwriting data)
-- Total Monthly Payments: Sum of all recurring payment obligations
-- Diesel Total Monthly Payments: Sum of diesel/fuel-related payments only
+- Total Monthly Payments: Sum of ALL payment-type debits (not just lender payments!)
+- Diesel Total Monthly Payments: Sum of diesel/fuel-related payments only (0 if none found, "not_computable" if can't determine)
 - Total Monthly Payments with Diesel: Total payments including diesel
-- Average Monthly Income: Average of monthly income/deposits
-- Annual Income: Projected or actual annual income
+- Average Monthly Income: Average of monthly credits/deposits ("not_computable" if no credit data)
+- Annual Income: Projected or actual annual income ("not_computable" if cannot derive)
 - Length of Deal (Months): Duration of the MCA deal
-- Holdback Percentage: The percentage being held back (e.g., 10%)
+- Holdback Percentage: The percentage being held back ("not_computable" if not stated)
 - Monthly Holdback: Dollar amount of monthly holdback
-- Monthly Payment to Income %: Payment as percentage of monthly income
+- Monthly Payment to Income %: Payment as percentage of monthly income ("not_computable" if income unknown)
 - Original Balance to Annual Income %: Original loan balance as % of annual income
 
 ## 2. DAILY POSITIONS (Daily payment MCA positions)
-List each daily position with:
+Cluster repeating debits from same merchant occurring on consecutive business days:
 - Name: Lender/Company name
-- Amount: Original balance/amount
-- Monthly Payment: Monthly payment amount
+- Amount: Per-payment amount
+- Monthly Payment: Amount × 22 (average business days per month)
 
 ## 3. WEEKLY POSITIONS (Weekly payment MCA positions)
-List each weekly position with:
+Cluster repeating debits from same merchant occurring ~7 days apart:
 - Name: Lender/Company name
-- Amount: Original balance/amount
-- Monthly Payment: Equivalent monthly payment
+- Amount: Per-payment amount
+- Monthly Payment: Amount × 4.33
 
 ## 4. MONTHLY POSITIONS (Non-MCA monthly obligations)
 List each monthly position with:
@@ -77,17 +105,17 @@ List each monthly position with:
 
 IMPORTANT - LENDER DETECTION:
 - Look for ANY recurring debits containing these keywords: Financing, Capital, Funding, Advance, Lending, Merchant, MCA, Loan, Factor
-- Examples: "Intuit Financing", "Oat Financial", "ABC Capital" - these are ALL lender positions even if small amounts
+- Examples: "Intuit Financing", "JNG Capital", "Oat Financial", "Paymentech" - these are ALL lender positions
 - If a lender appears with DIFFERENT amounts or frequencies, list BOTH as separate positions (stacking)
 - Only consolidate positions if you see a "Payoff" credit from that lender
 
 ## 5. BANK ACCOUNT DATA (Per-account monthly breakdown)
 For each bank account identified, extract per-month data:
-- Account Name/Number
-- For each month: Total Income, Deductions, Net Revenue
+- Account Name/Number (if no account identifiers, note this limitation)
+- For each month: Total Income (from credits), Deductions (from debits), Net Revenue
 
 ## 6. TOTAL REVENUES BY MONTH
-Monthly revenue totals across all accounts
+Monthly revenue totals across all accounts ("not_computable" if no credit data)
 
 IMPORTANT - TRANSFER CLASSIFICATION:
 - ONLY exclude deposits as "Internal Transfers" if:
@@ -100,16 +128,24 @@ IMPORTANT - TRANSFER CLASSIFICATION:
 Monthly deduction amounts per account
 
 ## 8. TRANSACTIONS (Individual transactions for verification)
-List key transactions with date, description, amount, type, and category
+List ALL transactions with:
+- date: Transaction date
+- description: Full description
+- amount: Numeric amount (always positive)
+- type: "debit" or "credit" (USE THIS TO DETERMINE CASH FLOW!)
+- category: "income", "diesel", "payment", "transfer", "other"
+- lender_payment: true/false (true if matches lender keywords)
 
 CRITICAL INSTRUCTIONS:
 1. Extract ALL data fields - do not skip any section
 2. All amounts must be NUMBERS (no $ symbols or commas in values)
 3. Percentages should be NUMBERS (e.g., 10 not "10%")
 4. Show your mathematical reasoning
-5. If data is not present, use 0 or empty array
-6. Verify sums match your calculations
-7. Mark each transaction as lender_payment: true if it matches lender keywords
+5. Use "not_computable" (string) for metrics that cannot be calculated from available data
+6. Use 0 only when the value is genuinely zero
+7. Verify sums match your calculations
+8. Mark each transaction with lender_payment: true if it matches lender keywords
+9. USE THE TYPE FIELD to determine debits vs credits - DO NOT rely on amount sign!
 
 Output format must be JSON with this EXACT structure:
 {

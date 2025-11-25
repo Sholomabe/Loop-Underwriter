@@ -129,21 +129,37 @@ def is_related_entity_revenue(sender_name: Optional[str], merchant_name: Optiona
     return False
 
 
-def is_known_lender_payment(description: Optional[str], amount) -> bool:
+def is_known_lender_payment(description: Optional[str], amount=None, txn_type: Optional[str] = None) -> bool:
     """
-    Check if a debit matches known lender keywords.
+    Check if a transaction matches known lender keywords.
     
     NEW RULE: If a recurring debit matches ANY of the Known_Lender_Keywords,
     it should be flagged as a potential MCA/lending position.
     
+    IMPORTANT: Use txn_type ('debit'/'credit') to determine cash flow direction,
+    NOT the amount sign. Amounts may always be positive with type indicating direction.
+    
     Args:
         description: Transaction description
-        amount: Transaction amount (should be negative for debits)
+        amount: Transaction amount (can be positive or negative)
+        txn_type: Transaction type - 'debit' or 'credit' (preferred over amount sign)
     
     Returns:
-        True if this matches lender keywords
+        True if this matches lender keywords and is a debit
     """
-    if not description or amount >= 0:
+    if not description:
+        return False
+    
+    # Determine if this is a debit (outflow)
+    is_debit = False
+    if txn_type:
+        # Prefer using type field
+        is_debit = txn_type.lower() == 'debit'
+    elif amount is not None:
+        # Fallback to amount sign
+        is_debit = safe_float(amount) < 0
+    
+    if not is_debit:
         return False
     
     desc_lower = description.lower()
@@ -151,6 +167,44 @@ def is_known_lender_payment(description: Optional[str], amount) -> bool:
     for keyword in KNOWN_LENDER_KEYWORDS:
         if keyword in desc_lower:
             return True
+    
+    return False
+
+
+def is_payment_category_debit(txn: Dict) -> bool:
+    """
+    Check if a transaction is a payment-category debit.
+    
+    NEW RULE: Include ALL payment-category debits in total_monthly_payments,
+    regardless of lender_payment flag.
+    
+    Args:
+        txn: Transaction dict with type, category, amount fields
+    
+    Returns:
+        True if this should count toward total_monthly_payments
+    """
+    txn_type = str(txn.get('type', '')).lower()
+    category = str(txn.get('category', '')).lower()
+    amount = safe_float(txn.get('amount', 0))
+    
+    # Determine if it's a debit using type field OR amount sign
+    is_debit = False
+    if txn_type == 'debit':
+        is_debit = True
+    elif txn_type == 'credit':
+        is_debit = False
+    else:
+        # Fallback to amount sign if no type field
+        is_debit = amount < 0
+    
+    # Count if it's a payment-category debit
+    if is_debit and category in ['payment', 'debit', 'withdrawal']:
+        return True
+    
+    # Also count if it's flagged as a lender payment
+    if is_debit and txn.get('lender_payment', False):
+        return True
     
     return False
 
@@ -215,6 +269,7 @@ def find_inter_account_transfers(
     for idx, row in df.iterrows():
         description = row.get('description', '')
         amount = row['amount']
+        txn_type = str(row.get('type', '')).lower() if 'type' in row else None
         
         # Check if this is an EXPLICIT internal transfer
         if is_explicit_internal_transfer(description, known_account_numbers):
@@ -223,7 +278,8 @@ def find_inter_account_transfers(
             matched_ids.add(row['id'])
         
         # Check if this is a lender payment (debit matching known lender keywords)
-        if is_known_lender_payment(description, amount):
+        # Pass type field to properly handle positive amounts with type='debit'
+        if is_known_lender_payment(description, amount, txn_type):
             df.at[idx, 'is_lender_payment'] = True
     
     # STEP 2: Find amount-matched transfers between different accounts
@@ -410,6 +466,111 @@ def calculate_revenue_with_overrides(transactions: List[Dict], overrides: Option
     }
 
 
+def cluster_positions_by_merchant(transactions: List[Dict], amount_tolerance: float = 0.03) -> List[Dict]:
+    """
+    Cluster transactions by merchant name and similar amounts to detect position patterns.
+    
+    NEW RULE: Group debits by normalized merchant label + amount tolerance (within 3%)
+    with cadence detection (daily, weekly, monthly).
+    
+    Args:
+        transactions: List of transaction dicts with type, amount, description, date
+        amount_tolerance: Percentage tolerance for grouping similar amounts (0.03 = 3%)
+    
+    Returns:
+        List of detected position clusters
+    """
+    if not transactions:
+        return []
+    
+    # Group debits by merchant
+    merchant_groups = {}
+    
+    for txn in transactions:
+        # Determine if it's a debit
+        txn_type = str(txn.get('type', '')).lower()
+        amount = safe_float(txn.get('amount', 0))
+        
+        is_debit = False
+        if txn_type == 'debit':
+            is_debit = True
+            amount = abs(amount)  # Ensure positive for grouping
+        elif txn_type == 'credit':
+            is_debit = False
+        else:
+            is_debit = amount < 0
+            amount = abs(amount)
+        
+        if not is_debit or amount == 0:
+            continue
+        
+        description = txn.get('description', '')
+        merchant = extract_lender_name(description)
+        date = txn.get('transaction_date')
+        
+        if merchant not in merchant_groups:
+            merchant_groups[merchant] = []
+        
+        merchant_groups[merchant].append({
+            'amount': amount,
+            'date': date,
+            'description': description,
+            'lender_payment': txn.get('lender_payment', False)
+        })
+    
+    # Cluster by similar amounts within each merchant
+    positions = []
+    
+    for merchant, txns in merchant_groups.items():
+        if len(txns) < 2:
+            continue
+        
+        # Group by similar amounts
+        amount_clusters = []
+        for txn in txns:
+            amt = txn['amount']
+            matched = False
+            
+            for cluster in amount_clusters:
+                cluster_amt = cluster['amount']
+                if abs(amt - cluster_amt) / max(cluster_amt, 1) <= amount_tolerance:
+                    cluster['transactions'].append(txn)
+                    matched = True
+                    break
+            
+            if not matched:
+                amount_clusters.append({
+                    'amount': amt,
+                    'transactions': [txn]
+                })
+        
+        # Create positions from clusters
+        for cluster in amount_clusters:
+            if len(cluster['transactions']) < 2:
+                continue
+            
+            frequency = detect_payment_frequency(cluster['transactions'])
+            amount = cluster['amount']
+            
+            if frequency == 'daily':
+                monthly_payment = amount * 22
+            elif frequency == 'weekly':
+                monthly_payment = amount * 4.33
+            else:
+                monthly_payment = amount
+            
+            positions.append({
+                'merchant': merchant,
+                'amount': round(amount, 2),
+                'frequency': frequency,
+                'monthly_payment': round(monthly_payment, 2),
+                'count': len(cluster['transactions']),
+                'is_lender': any(t.get('lender_payment') for t in cluster['transactions'])
+            })
+    
+    return positions
+
+
 def detect_lender_positions(
     transactions: List[Dict],
     min_occurrences: int = 2
@@ -421,6 +582,8 @@ def detect_lender_positions(
     in the same month, list BOTH as separate active positions (stacking).
     
     Only consolidate to one position if a "Payoff" deposit is detected.
+    
+    IMPORTANT: Uses 'type' field to determine debits, NOT amount sign.
     
     Args:
         transactions: List of transaction dicts
@@ -439,13 +602,25 @@ def detect_lender_positions(
         amount = safe_float(txn.get('amount', 0))
         description = txn.get('description', '')
         date = txn.get('transaction_date')
+        txn_type = str(txn.get('type', '')).lower()
         
-        # Only analyze debits (negative amounts) that match lender keywords
-        if amount >= 0:
+        # Determine if this is a debit - use type field preferentially
+        is_debit = False
+        if txn_type == 'debit':
+            is_debit = True
+            amount = abs(amount)
+        elif txn_type == 'credit':
+            is_debit = False
+        else:
+            # Fallback to amount sign
+            is_debit = amount < 0
+            amount = abs(amount)
+        
+        if not is_debit:
             continue
         
-        # Check if this matches lender keywords
-        if not is_known_lender_payment(description, amount):
+        # Check if this matches lender keywords (passing type for proper detection)
+        if not is_known_lender_payment(description, amount, txn_type or ('debit' if is_debit else 'credit')):
             continue
         
         # Extract lender name from description
@@ -455,7 +630,7 @@ def detect_lender_positions(
             lender_transactions[lender_name] = []
         
         lender_transactions[lender_name].append({
-            'amount': abs(amount),
+            'amount': amount,
             'date': date,
             'description': description
         })
