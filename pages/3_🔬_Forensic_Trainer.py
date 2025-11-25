@@ -55,6 +55,138 @@ if 'truth_nsf' not in st.session_state:
 if 'extracted_excel_data' not in st.session_state:
     st.session_state.extracted_excel_data = None
 
+# Initialize session state for correction report (persists across reruns)
+if 'last_correction_report' not in st.session_state:
+    st.session_state.last_correction_report = None
+if 'last_correction_timestamp' not in st.session_state:
+    st.session_state.last_correction_timestamp = None
+if 'last_correction_saved' not in st.session_state:
+    st.session_state.last_correction_saved = False
+if 'last_correction_id' not in st.session_state:
+    st.session_state.last_correction_id = None
+if '_auto_load_done' not in st.session_state:
+    st.session_state._auto_load_done = False
+if '_manual_load_active' not in st.session_state:
+    st.session_state._manual_load_active = False
+
+# AUTO-LOAD: Load the most recent audit from database ONLY on first session load
+# Skip if: already auto-loaded, manual load active, or there's already a report in session
+should_auto_load = (
+    not st.session_state._auto_load_done and 
+    not st.session_state._manual_load_active and
+    st.session_state.last_correction_report is None
+)
+
+if should_auto_load:
+    try:
+        with get_db() as db:
+            most_recent = db.query(TrainingExample).filter(
+                TrainingExample.correction_details.isnot(None)
+            ).order_by(TrainingExample.created_at.desc()).first()
+            
+            if most_recent and most_recent.correction_details:
+                details = most_recent.correction_details
+                if details.get('audit_type') == 'adversarial_self_audit':
+                    st.session_state.last_correction_report = details.get('correction_report', {})
+                    st.session_state.last_correction_timestamp = most_recent.created_at
+                    st.session_state.last_correction_saved = True
+                    st.session_state.last_correction_id = most_recent.id
+        st.session_state._auto_load_done = True
+    except Exception:
+        st.session_state._auto_load_done = True  # Mark done even on error to prevent retries
+
+# Helper function to display a correction report (reusable)
+def display_correction_report(correction_report, show_save_button=True, key_prefix=""):
+    """Display a correction report in a user-friendly format."""
+    # Display errors found
+    if 'errors_found' in correction_report and correction_report['errors_found']:
+        st.markdown("### ❌ Errors Identified")
+        for i, error in enumerate(correction_report['errors_found'], 1):
+            st.error(f"{i}. {error}")
+    else:
+        st.info("No specific errors identified")
+    
+    # Display missed transactions
+    if 'missed_transactions' in correction_report and correction_report['missed_transactions']:
+        st.markdown("### 🔍 Missed Transactions")
+        for txn in correction_report['missed_transactions']:
+            desc = txn.get('description', 'N/A')
+            amt = txn.get('amount', 0)
+            why = txn.get('why_missed', 'N/A')
+            st.warning(f"**{desc}**: ${amt:,.2f} - *{why}*")
+    
+    # Display miscategorized transactions
+    if 'miscategorized_transactions' in correction_report and correction_report['miscategorized_transactions']:
+        st.markdown("### 🔄 Miscategorized Transactions")
+        for txn in correction_report['miscategorized_transactions']:
+            desc = txn.get('description', 'N/A')
+            was_cat = txn.get('was_categorized_as', 'N/A')
+            should_be = txn.get('should_be', 'N/A')
+            st.warning(f"**{desc}**: Was '{was_cat}' → Should be '{should_be}'")
+    
+    # Display correction explanation
+    if 'correction_explanation' in correction_report and correction_report['correction_explanation']:
+        st.markdown("### 📖 Detailed Explanation")
+        st.info(correction_report['correction_explanation'])
+    
+    # Display root cause analysis if present
+    if 'root_cause' in correction_report and correction_report['root_cause']:
+        st.markdown("### 🔬 Root Cause Analysis")
+        st.write(correction_report['root_cause'])
+    
+    # Display recommendations if present
+    if 'recommendations' in correction_report and correction_report['recommendations']:
+        st.markdown("### 💡 Recommendations for Improvement")
+        for rec in correction_report['recommendations']:
+            st.write(f"• {rec}")
+    
+    # Display learned pattern and save option
+    if 'learned_pattern' in correction_report and correction_report['learned_pattern'] and show_save_button:
+        st.divider()
+        st.subheader("💾 Save to Memory Bank (RAG)")
+        st.code(correction_report['learned_pattern'], language='text')
+        
+        if st.button("Save Learned Pattern to GoldStandard_Rules", key=f"{key_prefix}save_pattern_btn"):
+            with get_db() as db:
+                rule = GoldStandardRule(
+                    rule_pattern=correction_report['learned_pattern'],
+                    rule_type='general_correction',
+                    original_classification='error',
+                    correct_classification='corrected',
+                    confidence_score=1.0,
+                    context_json=correction_report,
+                    created_at=datetime.utcnow()
+                )
+                db.add(rule)
+                db.commit()
+            st.success("✅ Pattern saved to memory bank! AI will apply this learning to future deals.")
+    
+    # Show raw JSON for debugging
+    with st.expander("🔧 View Raw Correction Report JSON"):
+        st.json(correction_report)
+
+# STANDALONE SECTION: Display most recent self-audit from session (independent of training_result)
+if st.session_state.last_correction_report:
+    st.divider()
+    st.subheader("📝 Most Recent Self-Audit Report")
+    if st.session_state.last_correction_timestamp:
+        st.caption(f"Generated: {st.session_state.last_correction_timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
+    if st.session_state.last_correction_saved:
+        st.success(f"✅ This report has been saved to the database (ID: {st.session_state.last_correction_id})")
+    
+    display_correction_report(st.session_state.last_correction_report, show_save_button=True, key_prefix="recent_")
+    
+    # Clear button
+    if st.button("🗑️ Clear This Report", key="clear_recent_report_btn"):
+        st.session_state.last_correction_report = None
+        st.session_state.last_correction_timestamp = None
+        st.session_state.last_correction_saved = False
+        st.session_state.last_correction_id = None
+        st.session_state._manual_load_active = False  # Reset manual load flag
+        st.session_state._auto_load_done = False  # Allow auto-load again
+        st.rerun()
+    st.divider()
+
 # Excel upload section OR manual entry preview (outside form for immediate feedback)
 excel_file = None
 if truth_input_method == "📊 Upload Excel File":
@@ -639,79 +771,158 @@ if 'training_result' in st.session_state:
                 try:
                     correction_report = json.loads(correction_report_json)
                     
+                    # Store in session state so it persists across reruns
+                    st.session_state.last_correction_report = correction_report
+                    st.session_state.last_correction_timestamp = datetime.utcnow()
+                    st.session_state.last_correction_saved = False
+                    st.session_state.last_correction_id = None
+                    
+                    # Auto-save to database with error handling
+                    try:
+                        with get_db() as db:
+                            training_example = TrainingExample(
+                                original_financial_json=ai_result,
+                                user_corrected_summary=f"Self-Audit Report - {len(correction_report.get('errors_found', []))} errors found",
+                                correction_details={
+                                    'correction_report': correction_report,
+                                    'human_truth': human_truth,
+                                    'differences_count': len(differences),
+                                    'audit_type': 'adversarial_self_audit'
+                                },
+                                created_at=datetime.utcnow()
+                            )
+                            db.add(training_example)
+                            db.commit()
+                            db.refresh(training_example)
+                            st.session_state.last_correction_saved = True
+                            st.session_state.last_correction_id = training_example.id
+                    except Exception as db_error:
+                        st.warning(f"⚠️ Could not save to database: {str(db_error)}")
+                        st.session_state.last_correction_saved = False
+                    
                     st.success("✅ AI has completed its self-audit!")
+                    st.rerun()
                     
-                    # Display correction report
-                    st.subheader("📝 AI's Correction Report")
-                    
-                    if 'errors_found' in correction_report:
-                        st.markdown("**Errors Identified:**")
-                        for error in correction_report['errors_found']:
-                            st.write(f"- {error}")
-                    
-                    if 'missed_transactions' in correction_report:
-                        st.markdown("**Missed Transactions:**")
-                        for txn in correction_report['missed_transactions']:
-                            st.write(f"- {txn.get('description', 'N/A')}: ${txn.get('amount', 0):,.2f} - {txn.get('why_missed', 'N/A')}")
-                    
-                    if 'miscategorized_transactions' in correction_report:
-                        st.markdown("**Miscategorized Transactions:**")
-                        for txn in correction_report['miscategorized_transactions']:
-                            st.write(f"- {txn.get('description', 'N/A')}: Was '{txn.get('was_categorized_as', 'N/A')}', Should be '{txn.get('should_be', 'N/A')}'")
-                    
-                    if 'correction_explanation' in correction_report:
-                        st.markdown("**Detailed Explanation:**")
-                        st.write(correction_report['correction_explanation'])
-                    
-                    # Save learned pattern to GoldStandard_Rules
-                    if 'learned_pattern' in correction_report and correction_report['learned_pattern']:
-                        st.divider()
-                        st.subheader("💾 Save to Memory Bank (RAG)")
-                        
-                        if st.button("Save Learned Pattern to GoldStandard_Rules"):
-                            with get_db() as db:
-                                # Create a new gold standard rule
-                                rule = GoldStandardRule(
-                                    rule_pattern=correction_report['learned_pattern'],
-                                    rule_type='general_correction',
-                                    original_classification='error',
-                                    correct_classification='corrected',
-                                    confidence_score=1.0,
-                                    context_json=correction_report,
-                                    created_at=datetime.utcnow()
-                                )
-                                db.add(rule)
-                                db.commit()
-                            
-                            st.success("✅ Pattern saved to memory bank! AI will apply this learning to future deals.")
-                
                 except json.JSONDecodeError:
                     st.error("Error parsing AI's correction report")
                     st.text(correction_report_json)
+        
+        # Note: The correction report display is now handled by the standalone section at the top
+        if st.session_state.last_correction_report:
+            st.info("📝 See the 'Most Recent Self-Audit Report' section above for the detailed results")
 
 st.divider()
 
 # Show existing training examples
-st.subheader("📚 Training History")
+st.subheader("📚 Training History & Self-Audit Results")
 
 with get_db() as db:
-    training_examples = db.query(TrainingExample).order_by(TrainingExample.created_at.desc()).limit(10).all()
+    training_examples = db.query(TrainingExample).order_by(TrainingExample.created_at.desc()).limit(20).all()
     
     if training_examples:
+        # Count self-audits
+        audit_count = sum(1 for ex in training_examples if ex.correction_details and ex.correction_details.get('audit_type') == 'adversarial_self_audit')
+        st.info(f"📊 Found {len(training_examples)} training examples ({audit_count} self-audits)")
+        
         for example in training_examples:
-            with st.expander(f"Training Example #{example.id} - {example.created_at.strftime('%Y-%m-%d %H:%M')}"):
-                col1, col2 = st.columns(2)
+            # Determine if this is a self-audit
+            is_self_audit = example.correction_details and example.correction_details.get('audit_type') == 'adversarial_self_audit'
+            icon = "🔬" if is_self_audit else "📝"
+            label = "Self-Audit" if is_self_audit else "Training Example"
+            
+            with st.expander(f"{icon} {label} #{example.id} - {example.created_at.strftime('%Y-%m-%d %H:%M')} - {example.user_corrected_summary}"):
                 
-                with col1:
-                    st.markdown("**Original Data:**")
-                    st.json(example.original_financial_json)
+                if is_self_audit and example.correction_details:
+                    # Display self-audit results in a user-friendly format
+                    correction_report = example.correction_details.get('correction_report', {})
+                    
+                    # Add "Load in Viewer" button to view this audit in the top viewer
+                    if st.button(f"📤 Load in Main Viewer", key=f"load_audit_{example.id}"):
+                        st.session_state.last_correction_report = correction_report
+                        st.session_state.last_correction_timestamp = example.created_at
+                        st.session_state.last_correction_saved = True
+                        st.session_state.last_correction_id = example.id
+                        st.session_state._manual_load_active = True  # Prevent auto-load from overwriting
+                        st.success("✅ Loaded! Scroll up to see the 'Most Recent Self-Audit Report' section")
+                        st.rerun()
+                    
+                    st.markdown("### 📊 Audit Summary")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        errors_count = len(correction_report.get('errors_found', []))
+                        missed_count = len(correction_report.get('missed_transactions', []))
+                        st.metric("Errors Found", errors_count)
+                    with col2:
+                        miscat_count = len(correction_report.get('miscategorized_transactions', []))
+                        st.metric("Miscategorized", miscat_count)
+                    
+                    # Display errors
+                    if correction_report.get('errors_found'):
+                        st.markdown("### ❌ Errors Identified")
+                        for i, error in enumerate(correction_report['errors_found'], 1):
+                            st.error(f"{i}. {error}")
+                    
+                    # Display missed transactions
+                    if correction_report.get('missed_transactions'):
+                        st.markdown("### 🔍 Missed Transactions")
+                        for txn in correction_report['missed_transactions']:
+                            desc = txn.get('description', 'N/A')
+                            amt = txn.get('amount', 0)
+                            why = txn.get('why_missed', 'N/A')
+                            st.warning(f"**{desc}**: ${amt:,.2f} - *{why}*")
+                    
+                    # Display miscategorized
+                    if correction_report.get('miscategorized_transactions'):
+                        st.markdown("### 🔄 Miscategorized Transactions")
+                        for txn in correction_report['miscategorized_transactions']:
+                            desc = txn.get('description', 'N/A')
+                            was_cat = txn.get('was_categorized_as', 'N/A')
+                            should_be = txn.get('should_be', 'N/A')
+                            st.warning(f"**{desc}**: Was '{was_cat}' → Should be '{should_be}'")
+                    
+                    # Display explanation
+                    if correction_report.get('correction_explanation'):
+                        st.markdown("### 📖 Detailed Explanation")
+                        st.info(correction_report['correction_explanation'])
+                    
+                    # Display root cause if present
+                    if correction_report.get('root_cause'):
+                        st.markdown("### 🔬 Root Cause")
+                        st.write(correction_report['root_cause'])
+                    
+                    # Display recommendations if present
+                    if correction_report.get('recommendations'):
+                        st.markdown("### 💡 Recommendations")
+                        for rec in correction_report['recommendations']:
+                            st.write(f"• {rec}")
+                    
+                    # Display learned pattern if present
+                    if correction_report.get('learned_pattern'):
+                        st.markdown("### 🧠 Learned Pattern")
+                        st.code(correction_report['learned_pattern'], language='text')
+                    
+                    # Raw data expanders
+                    with st.expander("🔧 View Raw Correction Report"):
+                        st.json(correction_report)
+                    
+                    with st.expander("🔧 View Human Truth Data"):
+                        human_truth = example.correction_details.get('human_truth', {})
+                        st.json(human_truth)
                 
-                with col2:
-                    st.markdown("**Corrected Summary:**")
-                    st.text(example.user_corrected_summary)
-                
-                if example.correction_details:
-                    st.markdown("**Correction Details:**")
-                    st.json(example.correction_details)
+                else:
+                    # Regular training example display
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.markdown("**Original AI Data:**")
+                        st.json(example.original_financial_json)
+                    
+                    with col2:
+                        st.markdown("**Corrected Summary:**")
+                        st.text(example.user_corrected_summary)
+                    
+                    if example.correction_details:
+                        st.markdown("**Correction Details:**")
+                        st.json(example.correction_details)
     else:
-        st.info("No training examples yet. Start training the AI to improve its accuracy!")
+        st.info("No training examples yet. Upload a deal and run a self-audit to start training the AI!")
