@@ -170,28 +170,30 @@ def parse_info_needed_section(df: pd.DataFrame, log: List[str]) -> Dict[str, Any
     }
     
     # Define search patterns for each field
+    # Format: field_name -> (patterns, column_offset) 
+    # column_offset specifies which adjacent column to read (1 = first value, 2 = second value)
     field_patterns = {
-        'total_monthly_payments': ['total monthly payments', 'total monthly payment'],
-        'diesel_total_monthly_payments': ["diesel's total monthly payments", "diesel total monthly", "diesel's total"],
-        'total_monthly_payments_with_diesel': ['total monthly payments (including diesel', 'including diesel'],
-        'average_monthly_income': ['average monthly income', 'avg monthly income'],
-        'annual_income': ['annual income'],
-        'length_of_deal_months': ['length of deal', 'deal length'],
-        'holdback_percentage': ['holdback percentage', 'holdback %'],
-        'monthly_holdback': ['monthly holdback'],
-        'monthly_payment_to_income_pct': ['monthly payment to monthly income', 'payment to income'],
-        'original_balance_to_annual_income_pct': ['original balance to annual income', 'balance to annual'],
+        'total_monthly_payments': (['total monthly payments', 'total monthly payment'], 1),
+        'diesel_total_monthly_payments': (["diesel's total monthly payments", "diesel total monthly", "diesel's total"], 1),
+        'total_monthly_payments_with_diesel': (['total monthly payments (including diesel', 'including diesel'], 1),
+        'average_monthly_income': (['average monthly income', 'avg monthly income'], 1),
+        'annual_income': (['annual income'], 1),
+        'length_of_deal_months': (['length of deal', 'deal length'], 1),
+        'holdback_percentage': (['holdback percentage', 'holdback %', 'holdback percentage / monthly holdback'], 1),
+        'monthly_holdback': (['holdback percentage / monthly holdback'], 2),  # Second value after the combined label
+        'monthly_payment_to_income_pct': (['monthly payment to monthly income', 'payment to income'], 1),
+        'original_balance_to_annual_income_pct': (['original balance to annual income', 'balance to annual'], 1),
     }
     
-    for field_name, patterns in field_patterns.items():
+    for field_name, (patterns, col_offset) in field_patterns.items():
         location = find_cell_location(df, patterns)
         if location:
             row, col = location
-            # Try getting value to the right first
-            value = get_value_at_offset(df, row, col, 0, 1)
+            # Get value at the specified column offset
+            value = get_value_at_offset(df, row, col, 0, col_offset)
             if pd.isna(value) or value is None:
-                # Try next column over
-                value = get_value_at_offset(df, row, col, 0, 2)
+                # Try next column over as fallback
+                value = get_value_at_offset(df, row, col, 0, col_offset + 1)
             
             parsed = parse_numeric(value)
             
@@ -201,7 +203,7 @@ def parse_info_needed_section(df: pd.DataFrame, log: List[str]) -> Dict[str, Any
             else:
                 info[field_name] = parsed
             
-            log.append(f"Found {field_name}: {info[field_name]} at row {row+1}, col {col+1}")
+            log.append(f"Found {field_name}: {info[field_name]} at row {row+1}, col {col+col_offset}")
         else:
             log.append(f"Could not find: {field_name}")
     
