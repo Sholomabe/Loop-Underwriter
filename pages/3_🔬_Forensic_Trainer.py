@@ -410,30 +410,65 @@ with st.form("upload_training_deal"):
                 db.commit()
                 
                 # Now compare AI results vs truth
+                # Handle both old flat format and new nested format from AI
+                ai_info = extracted_data.get('info_needed', extracted_data)
+                
                 ai_result = {
-                    'annual_income': extracted_data.get('annual_income', 0),
-                    'avg_monthly_income': extracted_data.get('avg_monthly_income', 0),
-                    'revenues_last_4_months': extracted_data.get('revenues_last_4_months', 0),
-                    'total_monthly_payments': extracted_data.get('total_monthly_payments', 0),
-                    'diesel_payments': extracted_data.get('diesel_payments', 0),
+                    'info_needed': {
+                        'total_monthly_payments': ai_info.get('total_monthly_payments', 0),
+                        'diesel_total_monthly_payments': ai_info.get('diesel_total_monthly_payments', ai_info.get('diesel_payments', 0)),
+                        'total_monthly_payments_with_diesel': ai_info.get('total_monthly_payments_with_diesel', 0),
+                        'average_monthly_income': ai_info.get('average_monthly_income', ai_info.get('avg_monthly_income', 0)),
+                        'annual_income': ai_info.get('annual_income', 0),
+                        'length_of_deal_months': ai_info.get('length_of_deal_months', 0),
+                        'holdback_percentage': ai_info.get('holdback_percentage', 0),
+                        'monthly_holdback': ai_info.get('monthly_holdback', 0),
+                        'monthly_payment_to_income_pct': ai_info.get('monthly_payment_to_income_pct', 0),
+                        'original_balance_to_annual_income_pct': ai_info.get('original_balance_to_annual_income_pct', 0),
+                    },
+                    'daily_positions': extracted_data.get('daily_positions', []),
+                    'weekly_positions': extracted_data.get('weekly_positions', []),
+                    'monthly_positions_non_mca': extracted_data.get('monthly_positions_non_mca', []),
+                    'bank_accounts': extracted_data.get('bank_accounts', {}),
+                    'total_revenues_by_month': extracted_data.get('total_revenues_by_month', {}),
+                    'deductions': extracted_data.get('deductions', {}),
                     'nsf_count': extracted_data.get('nsf_count', 0)
                 }
                 
-                human_truth = {
-                    'annual_income': final_truth_annual,
-                    'avg_monthly_income': final_truth_monthly,
-                    'revenues_last_4_months': final_truth_revenues,
-                    'total_monthly_payments': final_truth_payments,
-                    'diesel_payments': final_truth_diesel,
-                    'nsf_count': final_truth_nsf
-                }
+                # Get full truth data from Excel if available, otherwise use manual values
+                if truth_input_method == "📊 Upload Excel File" and st.session_state.extracted_excel_data:
+                    human_truth = st.session_state.extracted_excel_data
+                else:
+                    # Manual entry - create compatible structure
+                    human_truth = {
+                        'info_needed': {
+                            'total_monthly_payments': final_truth_payments,
+                            'diesel_total_monthly_payments': final_truth_diesel,
+                            'total_monthly_payments_with_diesel': final_truth_payments + final_truth_diesel,
+                            'average_monthly_income': final_truth_monthly,
+                            'annual_income': final_truth_annual,
+                            'length_of_deal_months': 0,
+                            'holdback_percentage': 0,
+                            'monthly_holdback': 0,
+                            'monthly_payment_to_income_pct': 0,
+                            'original_balance_to_annual_income_pct': 0,
+                        },
+                        'daily_positions': [],
+                        'weekly_positions': [],
+                        'monthly_positions_non_mca': [],
+                        'bank_accounts': {},
+                        'total_revenues_by_month': {},
+                        'deductions': {},
+                        'nsf_count': final_truth_nsf
+                    }
                 
                 # Store in session state for display
                 st.session_state['training_result'] = {
                     'deal_id': training_deal.id,
                     'ai_result': ai_result,
                     'human_truth': human_truth,
-                    'transactions': all_transactions
+                    'transactions': all_transactions,
+                    'full_extracted_data': extracted_data
                 }
                 
                 st.success(f"✅ Training deal created! Deal ID: {training_deal.id}")
@@ -442,43 +477,133 @@ with st.form("upload_training_deal"):
 # Display training results
 if 'training_result' in st.session_state:
     st.divider()
-    st.subheader("📊 Training Results - The Diff Check")
+    st.subheader("📊 Training Results - Comprehensive Comparison")
     
     result = st.session_state['training_result']
     ai_result = result['ai_result']
     human_truth = result['human_truth']
     
-    # Split screen comparison
-    left_col, center_col, right_col = st.columns(3)
+    # Helper function for safe numeric comparison
+    def safe_float_val(val, default=0.0):
+        if val is None:
+            return default
+        if isinstance(val, (int, float)):
+            return float(val)
+        if isinstance(val, str):
+            cleaned = val.replace('$', '').replace(',', '').replace('%', '').strip()
+            if cleaned == '' or cleaned == '-':
+                return default
+            try:
+                return float(cleaned)
+            except:
+                return default
+        return default
     
-    with left_col:
-        st.markdown("### 🤖 AI's Analysis")
+    # INFO NEEDED COMPARISON
+    st.markdown("### 📝 Info Needed Metrics Comparison")
+    
+    ai_info = ai_result.get('info_needed', ai_result)
+    human_info = human_truth.get('info_needed', human_truth)
+    
+    info_fields = [
+        ('total_monthly_payments', 'Total Monthly Payments', '$'),
+        ('diesel_total_monthly_payments', "Diesel's Total Monthly Payments", '$'),
+        ('total_monthly_payments_with_diesel', 'Total w/ Diesel', '$'),
+        ('average_monthly_income', 'Avg Monthly Income', '$'),
+        ('annual_income', 'Annual Income', '$'),
+        ('length_of_deal_months', 'Length of Deal (months)', ''),
+        ('holdback_percentage', 'Holdback %', '%'),
+        ('monthly_holdback', 'Monthly Holdback', '$'),
+        ('monthly_payment_to_income_pct', 'Payment to Income %', '%'),
+        ('original_balance_to_annual_income_pct', 'Orig Balance to Annual Income %', '%'),
+    ]
+    
+    differences = []
+    for field_key, field_name, symbol in info_fields:
+        ai_val = safe_float_val(ai_info.get(field_key, 0))
+        human_val = safe_float_val(human_info.get(field_key, 0))
+        diff = human_val - ai_val
+        
+        if symbol == '$':
+            ai_display = f"${ai_val:,.2f}"
+            human_display = f"${human_val:,.2f}"
+            diff_display = f"${diff:,.2f}"
+        elif symbol == '%':
+            ai_display = f"{ai_val:.2f}%"
+            human_display = f"{human_val:.2f}%"
+            diff_display = f"{diff:.2f}%"
+        else:
+            ai_display = f"{ai_val:.0f}"
+            human_display = f"{human_val:.0f}"
+            diff_display = f"{diff:.0f}"
+        
+        match_status = "✅" if abs(diff) < 0.01 else "❌"
+        differences.append({
+            'Field': field_name,
+            'AI': ai_display,
+            'Truth': human_display,
+            'Diff': diff_display,
+            'Match': match_status
+        })
+    
+    import pandas as pd
+    diff_df = pd.DataFrame(differences)
+    st.dataframe(diff_df, use_container_width=True, hide_index=True)
+    
+    # Count matches vs mismatches
+    matches = sum(1 for d in differences if d['Match'] == '✅')
+    total = len(differences)
+    if matches == total:
+        st.success(f"✅ Perfect match on all {total} Info Needed metrics!")
+    else:
+        st.warning(f"⚠️ {matches}/{total} metrics match. {total - matches} differences found.")
+    
+    # POSITIONS COMPARISON
+    st.markdown("### 📊 Positions Comparison")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("**Daily Positions**")
+        ai_daily = ai_result.get('daily_positions', [])
+        human_daily = human_truth.get('daily_positions', [])
+        st.write(f"AI found: {len(ai_daily)} | Truth: {len(human_daily)}")
+        if len(ai_daily) != len(human_daily):
+            st.error(f"❌ Mismatch in count")
+        else:
+            st.success("✅ Count matches")
+    
+    with col2:
+        st.markdown("**Weekly Positions**")
+        ai_weekly = ai_result.get('weekly_positions', [])
+        human_weekly = human_truth.get('weekly_positions', [])
+        st.write(f"AI found: {len(ai_weekly)} | Truth: {len(human_weekly)}")
+        if len(ai_weekly) != len(human_weekly):
+            st.error(f"❌ Mismatch in count")
+        else:
+            st.success("✅ Count matches")
+    
+    with col3:
+        st.markdown("**Monthly (non MCA) Positions**")
+        ai_monthly = ai_result.get('monthly_positions_non_mca', [])
+        human_monthly = human_truth.get('monthly_positions_non_mca', [])
+        st.write(f"AI found: {len(ai_monthly)} | Truth: {len(human_monthly)}")
+        if len(ai_monthly) != len(human_monthly):
+            st.error(f"❌ Mismatch in count")
+        else:
+            st.success("✅ Count matches")
+    
+    # BANK ACCOUNTS COMPARISON
+    st.markdown("### 🏦 Bank Accounts Comparison")
+    ai_accounts = ai_result.get('bank_accounts', {})
+    human_accounts = human_truth.get('bank_accounts', {})
+    st.write(f"AI found: {len(ai_accounts)} accounts | Truth: {len(human_accounts)} accounts")
+    
+    # Show detailed comparison in expanders
+    with st.expander("🔍 View Detailed AI Results"):
         st.json(ai_result)
     
-    with center_col:
-        st.markdown("### ❌ Differences")
-        
-        differences = []
-        for key in human_truth:
-            if key in ai_result:
-                diff = human_truth[key] - ai_result[key]
-                if abs(diff) > 0.01:
-                    differences.append({
-                        'Field': key.replace('_', ' ').title(),
-                        'AI': f"${ai_result[key]:,.2f}" if isinstance(ai_result[key], (int, float)) else str(ai_result[key]),
-                        'Truth': f"${human_truth[key]:,.2f}" if isinstance(human_truth[key], (int, float)) else str(human_truth[key]),
-                        'Diff': f"${diff:,.2f}" if isinstance(diff, (int, float)) else str(diff)
-                    })
-        
-        if differences:
-            import pandas as pd
-            diff_df = pd.DataFrame(differences)
-            st.dataframe(diff_df, use_container_width=True)
-        else:
-            st.success("✅ Perfect match! No errors found.")
-    
-    with right_col:
-        st.markdown("### ✅ Human Truth")
+    with st.expander("🔍 View Detailed Truth Data"):
         st.json(human_truth)
     
     # Run adversarial correction
