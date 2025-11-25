@@ -105,6 +105,9 @@ def parse_underwriting_excel(file_path_or_buffer) -> Dict[str, Any]:
         # Parse Total Revenues by Month
         result['total_revenues_by_month'] = parse_total_revenues(df, result['parse_log'])
         
+        # Parse Deductions Section (separate from bank accounts)
+        result['deductions'] = parse_deductions(df, result['parse_log'])
+        
     except Exception as e:
         result['parse_log'].append(f"ERROR: {str(e)}")
     
@@ -296,7 +299,9 @@ def parse_bank_accounts(df: pd.DataFrame, log: List[str]) -> Dict[str, Any]:
     for row_idx in range(len(df)):
         for col_idx in range(len(df.columns)):
             cell_value = df.iloc[row_idx, col_idx]
-            if pd.notna(cell_value) and 'bank account' in str(cell_value).lower():
+            # Search for both "Bank Account" and "Bank Accoount" (typo with double 'o')
+            cell_str = str(cell_value).lower() if pd.notna(cell_value) else ''
+            if 'bank account' in cell_str or 'bank accoount' in cell_str:
                 account_name = str(cell_value).strip()
                 # Avoid duplicates
                 if not any(loc[2] == account_name for loc in account_locations):
@@ -380,31 +385,172 @@ def parse_bank_accounts(df: pd.DataFrame, log: List[str]) -> Dict[str, Any]:
 
 
 def parse_total_revenues(df: pd.DataFrame, log: List[str]) -> Dict[str, float]:
-    """Parse Total Revenues by month section."""
+    """Parse Total Revenues by month section.
+    
+    Layout: Similar to Bank Accounts
+    Row X: Total Revenues (header)
+    Row X+1: Month | Revenue Amount  (sub-headers)
+    Row X+2: Month 1 | $value
+    Row X+3: Month 2 | $value
+    ...
+    """
     revenues = {}
     
     # Look for "Total Revenues" or similar section
     location = find_cell_location(df, ['total revenues', 'revenues total'])
     
     if not location:
-        # Try calculating from bank accounts net revenues
         log.append("No 'Total Revenues' section found - will calculate from bank accounts")
         return revenues
     
     row_idx, col_idx = location
     log.append(f"Found 'Total Revenues' at row {row_idx+1}, col {col_idx+1}")
     
-    # Read revenue values for each month
-    for month_offset in range(1, 13):
-        data_row = row_idx + month_offset
-        if data_row < len(df):
-            month_label = f"Month {month_offset}"
-            # Revenue value might be in the next column
-            value = get_value_at_offset(df, row_idx, col_idx, month_offset, 1)
-            revenues[month_label] = parse_numeric(value)
+    # Look at the header row below to find column structure
+    header_row = row_idx + 1
+    log.append(f"  Checking header row {header_row+1}")
+    
+    # Log header row contents
+    if header_row < len(df):
+        header_contents = []
+        for c in range(col_idx, min(col_idx + 4, len(df.columns))):
+            val = df.iloc[header_row, c] if pd.notna(df.iloc[header_row, c]) else ''
+            header_contents.append(f"col{c+1}='{val}'")
+        log.append(f"  Header contents: {', '.join(header_contents)}")
+    
+    # Find the revenue value column (usually 1 column to the right of month labels)
+    # Data starts 2 rows below "Total Revenues" (1 row for sub-headers)
+    data_start_row = row_idx + 2
+    
+    # Read all months with data
+    for i in range(12):
+        data_row = data_start_row + i
+        if data_row >= len(df):
+            break
+        
+        # Get month label from first column
+        month_cell = df.iloc[data_row, col_idx] if pd.notna(df.iloc[data_row, col_idx]) else ''
+        month_str = str(month_cell).strip()
+        
+        # Stop if we hit empty or another section
+        if not month_str or 'bank' in month_str.lower() or 'deduction' in month_str.lower():
+            break
+        
+        # Get revenue value from column to the right
+        value_col = col_idx + 1
+        if value_col < len(df.columns):
+            value = df.iloc[data_row, value_col]
+            revenue = parse_numeric(value)
+            
+            # Only add if there's actual data
+            if revenue > 0:
+                revenues[month_str] = revenue
+                log.append(f"  {month_str}: ${revenue:,.2f}")
     
     log.append(f"Found {len(revenues)} months of total revenue data")
     return revenues
+
+
+def parse_deductions(df: pd.DataFrame, log: List[str]) -> Dict[str, Any]:
+    """Parse Deductions section for each bank account.
+    
+    Layout (user confirmed): Row 48, column 2
+    Similar to bank accounts - header, then sub-headers, then data
+    Account 2 deductions start at column 6
+    """
+    deductions = {}
+    
+    # Look for "Deductions" section headers
+    deduction_locations = []
+    for row_idx in range(len(df)):
+        for col_idx in range(len(df.columns)):
+            cell_value = df.iloc[row_idx, col_idx]
+            cell_str = str(cell_value).lower() if pd.notna(cell_value) else ''
+            # Look for standalone "Deductions" headers (not just the word in bank account headers)
+            if cell_str.strip() == 'deductions' or 'deductions account' in cell_str or 'account' in cell_str and 'deduction' in cell_str:
+                # Skip if this is part of bank account header row
+                row_text = ' '.join([str(df.iloc[row_idx, c]).lower() for c in range(len(df.columns)) if pd.notna(df.iloc[row_idx, c])])
+                if 'bank account' not in row_text and 'bank accoount' not in row_text:
+                    section_name = str(cell_value).strip()
+                    if not any(loc[2] == section_name for loc in deduction_locations):
+                        deduction_locations.append((row_idx, col_idx, section_name))
+    
+    log.append(f"Found {len(deduction_locations)} deduction sections")
+    
+    # Also try finding by specific row if we didn't find any
+    if len(deduction_locations) == 0:
+        log.append("  Looking for deduction data around row 48...")
+        # User said row 48 (0-indexed = 47)
+        check_row = 47  # Row 48 in Excel (0-indexed)
+        if check_row < len(df):
+            for col_idx in range(len(df.columns)):
+                cell_value = df.iloc[check_row, col_idx]
+                if pd.notna(cell_value) and str(cell_value).strip():
+                    cell_str = str(cell_value).strip()
+                    log.append(f"    Row 48, col {col_idx+1}: '{cell_str}'")
+                    if 'deduction' in cell_str.lower() or 'account' in cell_str.lower():
+                        deduction_locations.append((check_row, col_idx, cell_str))
+    
+    for row_idx, col_idx, section_name in deduction_locations:
+        log.append(f"Processing deductions: {section_name} at row {row_idx+1}, col {col_idx+1}")
+        
+        # Header row is 1 row below the section header
+        header_row = row_idx + 1
+        if header_row >= len(df):
+            continue
+        
+        # Log header contents
+        header_contents = []
+        for c in range(col_idx, min(col_idx + 5, len(df.columns))):
+            val = df.iloc[header_row, c] if pd.notna(df.iloc[header_row, c]) else ''
+            header_contents.append(f"col{c+1}='{val}'")
+        log.append(f"  Header row {header_row+1}: {', '.join(header_contents)}")
+        
+        # Find month and deduction columns
+        month_col = None
+        deduction_col = None
+        
+        for c in range(col_idx, min(col_idx + 5, len(df.columns))):
+            cell = str(df.iloc[header_row, c]).lower() if pd.notna(df.iloc[header_row, c]) else ''
+            if 'month' in cell and month_col is None:
+                month_col = c
+            elif 'deduction' in cell or 'amount' in cell:
+                deduction_col = c
+        
+        # Default to adjacent columns if not found
+        if month_col is None:
+            month_col = col_idx
+        if deduction_col is None:
+            deduction_col = col_idx + 1
+        
+        # Read month data
+        months_data = []
+        data_row = header_row + 1
+        
+        while data_row < len(df) and len(months_data) < 12:
+            month_cell = df.iloc[data_row, month_col] if pd.notna(df.iloc[data_row, month_col]) else ''
+            month_str = str(month_cell).strip()
+            
+            if not month_str or not month_str.lower().startswith('month'):
+                data_row += 1
+                if not month_str:
+                    break
+                continue
+            
+            deduction_value = parse_numeric(df.iloc[data_row, deduction_col]) if deduction_col < len(df.columns) else 0.0
+            
+            months_data.append({
+                'month': month_str,
+                'deduction': deduction_value
+            })
+            log.append(f"    {month_str}: Deduction=${deduction_value:,.2f}")
+            
+            data_row += 1
+        
+        deductions[section_name] = {'months': months_data}
+        log.append(f"  Found {len(months_data)} months of deduction data")
+    
+    return deductions
 
 
 def format_extracted_data_for_display(data: Dict[str, Any]) -> str:
@@ -457,5 +603,18 @@ def format_extracted_data_for_display(data: Dict[str, Any]) -> str:
             lines.append(f"  {month}: ${amount:,.2f}")
     else:
         lines.append("  (No separate totals found - use bank account net revenues)")
+    
+    lines.append("")
+    lines.append("=" * 60)
+    lines.append("💸 DEDUCTIONS (SEPARATE SECTION)")
+    lines.append("=" * 60)
+    deductions = data.get('deductions', {})
+    if deductions:
+        for section_name, section_data in deductions.items():
+            lines.append(f"\n  {section_name}:")
+            for month in section_data.get('months', []):
+                lines.append(f"    {month['month']}: Deduction=${month['deduction']:,.2f}")
+    else:
+        lines.append("  (No separate deductions section found)")
     
     return "\n".join(lines)
