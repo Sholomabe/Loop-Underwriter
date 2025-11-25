@@ -249,6 +249,27 @@ def extract_financial_data_from_pdf(
     # Build comprehensive prompt matching truth Excel structure
     system_prompt = """You are an expert financial data extractor specializing in bank statements for MCA (Merchant Cash Advance) underwriting.
 
+## BANK FORMAT FLEXIBILITY
+You will encounter statements from many different banks with varying formats:
+- Major banks: Chase, Bank of America, Wells Fargo, Citibank, US Bank, PNC, Capital One
+- Regional banks: TD Bank, Regions, Fifth Third, KeyBank, Huntington, M&T Bank
+- Credit unions, online banks (Ally, Chime, Discover), business banks
+- International banks with US branches
+
+Adapt to each bank's format:
+- DATE FORMATS: MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD, "Jan 15", "15-Jan-2024" - standardize to YYYY-MM-DD
+- AMOUNT FORMATS: $1,234.56, 1234.56, (1,234.56) for debits, 1,234.56- for debits
+- COLUMN LAYOUTS: Debits/Credits in separate columns, single Amount column with +/-, or Amount with separate Type column
+- TRANSACTION DESCRIPTIONS: Vary in length and detail - extract the core merchant/payee name
+- RUNNING BALANCES: Some show balance after each transaction, some only show opening/closing
+- MULTI-PAGE STATEMENTS: Data may span multiple pages with repeated headers
+
+When extracting:
+1. First identify the bank and its format patterns
+2. Look for column headers to understand the layout
+3. Determine how debits vs credits are indicated (negative sign, parentheses, separate columns, type labels)
+4. Extract ALL transactions regardless of format
+
 ## CRITICAL RULE 1: USE THE 'TYPE' FIELD, NOT AMOUNT SIGN
 - Transactions may have POSITIVE amounts but be marked with type='debit' or type='credit'
 - ALWAYS use the 'type' field to determine cash flow direction:
