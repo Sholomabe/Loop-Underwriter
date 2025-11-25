@@ -526,10 +526,14 @@ with st.form("upload_training_deal"):
                     )
                     
                     transactions = extracted_data.get('transactions', [])
-                    all_transactions.extend(transactions)
+                    # Validate transactions - filter out any non-dict items
+                    valid_transactions = [t for t in transactions if isinstance(t, dict)]
+                    all_transactions.extend(valid_transactions)
                 
                 # Run transfer hunter on all transactions
                 if all_transactions:
+                    # Double-check all transactions are dicts before assignment
+                    all_transactions = [t for t in all_transactions if isinstance(t, dict)]
                     for txn in all_transactions:
                         txn['deal_id'] = training_deal.id
                     

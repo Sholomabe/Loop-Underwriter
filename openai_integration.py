@@ -1,7 +1,8 @@
 import os
 import json
 import base64
-from typing import Dict, List, Optional, Tuple
+import re
+from typing import Dict, List, Optional, Tuple, Any
 from openai import OpenAI
 from PIL import Image
 import io
@@ -15,6 +16,210 @@ openai = OpenAI(
     api_key=AI_INTEGRATIONS_OPENAI_API_KEY,
     base_url=AI_INTEGRATIONS_OPENAI_BASE_URL
 )
+
+
+def repair_json(malformed_json: str) -> Tuple[Optional[Dict], str]:
+    """
+    Attempt to repair malformed JSON from AI responses.
+    
+    Common issues:
+    - Truncated JSON (unclosed brackets/braces)
+    - Extra text before/after JSON
+    - Invalid escape sequences
+    
+    Args:
+        malformed_json: The potentially broken JSON string
+        
+    Returns:
+        Tuple of (repaired_dict or None, repair_log)
+    """
+    repair_log = []
+    
+    # First, try parsing as-is
+    try:
+        return json.loads(malformed_json), "JSON parsed successfully without repair"
+    except json.JSONDecodeError as e:
+        repair_log.append(f"Initial parse failed: {e}")
+    
+    working_json = malformed_json
+    
+    # Step 1: Extract JSON from markdown code blocks if present
+    code_block_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', working_json)
+    if code_block_match:
+        working_json = code_block_match.group(1)
+        repair_log.append("Extracted JSON from markdown code block")
+    
+    # Step 2: Find the outermost JSON object
+    first_brace = working_json.find('{')
+    if first_brace > 0:
+        working_json = working_json[first_brace:]
+        repair_log.append(f"Removed {first_brace} chars before first brace")
+    
+    # Step 3: Count brackets and braces to detect truncation
+    open_braces = working_json.count('{')
+    close_braces = working_json.count('}')
+    open_brackets = working_json.count('[')
+    close_brackets = working_json.count(']')
+    
+    # Step 4: Try to close unclosed structures
+    if open_braces > close_braces or open_brackets > close_brackets:
+        repair_log.append(f"Detected truncation: {open_braces} {{ vs {close_braces} }}, {open_brackets} [ vs {close_brackets} ]")
+        
+        # Try to find a valid truncation point (after a complete value)
+        # Look for patterns like: ,"key": or ],"key": or },"key":
+        truncation_patterns = [
+            (r',\s*"[^"]*":\s*$', ''),  # Ends with ,"key":
+            (r',\s*"[^"]*":\s*"[^"]*$', '"'),  # Ends mid-string value
+            (r',\s*"[^"]*":\s*\d+\.?\d*$', ''),  # Ends with number
+            (r',\s*$', ''),  # Ends with comma
+        ]
+        
+        for pattern, suffix in truncation_patterns:
+            if re.search(pattern, working_json):
+                working_json = re.sub(pattern, suffix, working_json)
+                repair_log.append(f"Cleaned truncated ending matching: {pattern}")
+                break
+        
+        # Add missing closing brackets/braces
+        missing_brackets = close_brackets - open_brackets
+        missing_braces = close_braces - open_braces
+        
+        # Close arrays first, then objects (reverse order of opening)
+        if open_brackets > close_brackets:
+            working_json += ']' * (open_brackets - close_brackets)
+            repair_log.append(f"Added {open_brackets - close_brackets} closing brackets")
+        
+        if open_braces > close_braces:
+            working_json += '}' * (open_braces - close_braces)
+            repair_log.append(f"Added {open_braces - close_braces} closing braces")
+    
+    # Step 5: Try to parse the repaired JSON
+    try:
+        result = json.loads(working_json)
+        repair_log.append("Successfully parsed repaired JSON")
+        return result, "\n".join(repair_log)
+    except json.JSONDecodeError as e:
+        repair_log.append(f"Repair attempt failed: {e}")
+    
+    # Step 6: Try aggressive repair - find valid JSON subset
+    # Start from the beginning and find the longest valid JSON
+    for end_pos in range(len(working_json), 100, -100):
+        test_json = working_json[:end_pos]
+        
+        # Balance brackets
+        ob = test_json.count('{')
+        cb = test_json.count('}')
+        oq = test_json.count('[')
+        cq = test_json.count(']')
+        
+        test_json += ']' * max(0, oq - cq)
+        test_json += '}' * max(0, ob - cb)
+        
+        try:
+            result = json.loads(test_json)
+            repair_log.append(f"Found valid JSON subset at position {end_pos}")
+            return result, "\n".join(repair_log)
+        except:
+            continue
+    
+    repair_log.append("All repair attempts failed")
+    return None, "\n".join(repair_log)
+
+
+def validate_and_sanitize_transactions(transactions: Any) -> List[Dict]:
+    """
+    Validate and sanitize a transactions list, ensuring all elements are proper dictionaries
+    with required fields.
+    
+    Args:
+        transactions: Raw transactions data (might be list, dict, string, or None)
+        
+    Returns:
+        List of valid transaction dictionaries
+    """
+    if transactions is None:
+        return []
+    
+    # If it's a string, it might be JSON - try to parse
+    if isinstance(transactions, str):
+        try:
+            transactions = json.loads(transactions)
+        except:
+            return []
+    
+    # If it's not a list, wrap it or return empty
+    if not isinstance(transactions, list):
+        if isinstance(transactions, dict):
+            transactions = [transactions]
+        else:
+            return []
+    
+    valid_transactions = []
+    txn_counter = 1
+    
+    for txn in transactions:
+        # Skip non-dict items
+        if not isinstance(txn, dict):
+            continue
+        
+        # Ensure required fields with defaults
+        validated_txn = {
+            'id': txn.get('id') or f"txn_{txn_counter}",
+            'date': txn.get('date') or txn.get('transaction_date') or '1900-01-01',
+            'description': str(txn.get('description', 'Unknown'))[:500],  # Limit length
+            'amount': 0,
+            'type': str(txn.get('type', 'unknown')).lower(),
+            'category': str(txn.get('category', 'other')).lower()
+        }
+        
+        # Parse amount safely
+        amount_raw = txn.get('amount', 0)
+        if isinstance(amount_raw, (int, float)):
+            validated_txn['amount'] = float(amount_raw)
+        elif isinstance(amount_raw, str):
+            try:
+                cleaned = amount_raw.replace('$', '').replace(',', '').strip()
+                validated_txn['amount'] = float(cleaned) if cleaned else 0
+            except:
+                validated_txn['amount'] = 0
+        
+        # Copy over optional fields if they exist and are valid types
+        optional_fields = ['source_account_id', 'lender_payment', 'is_internal_transfer', 
+                          'matched_transfer_id', 'transfer_reason']
+        for field in optional_fields:
+            if field in txn and txn[field] is not None:
+                validated_txn[field] = txn[field]
+        
+        valid_transactions.append(validated_txn)
+        txn_counter += 1
+    
+    return valid_transactions
+
+
+def get_default_extraction_result() -> Dict:
+    """Return a default empty extraction result structure."""
+    return {
+        "info_needed": {
+            "total_monthly_payments": 0,
+            "diesel_total_monthly_payments": 0,
+            "total_monthly_payments_with_diesel": 0,
+            "average_monthly_income": "not_computable",
+            "annual_income": "not_computable",
+            "length_of_deal_months": 0,
+            "holdback_percentage": "not_computable",
+            "monthly_holdback": 0,
+            "monthly_payment_to_income_pct": "not_computable",
+            "original_balance_to_annual_income_pct": 0
+        },
+        "daily_positions": [],
+        "weekly_positions": [],
+        "monthly_positions_non_mca": [],
+        "bank_accounts": {},
+        "total_revenues_by_month": {},
+        "deductions": {},
+        "transactions": [],
+        "nsf_count": 0
+    }
 
 def encode_image_to_base64(image_path: str) -> str:
     """Encode image to base64 for OpenAI Vision API."""
@@ -229,37 +434,44 @@ Remember:
         )
         
         result_text = response.choices[0].message.content or "{}"
-        result_data = json.loads(result_text)
+        
+        # Try to parse JSON, with repair fallback
+        result_data = None
+        parse_log = ""
+        
+        try:
+            result_data = json.loads(result_text)
+            parse_log = "JSON parsed successfully"
+        except json.JSONDecodeError as json_err:
+            print(f"JSON parse error, attempting repair: {json_err}")
+            result_data, parse_log = repair_json(result_text)
+            
+            if result_data is None:
+                # Repair failed, return default with error info
+                default_result = get_default_extraction_result()
+                default_result["error"] = f"JSON parse failed: {json_err}"
+                default_result["parse_log"] = parse_log
+                return default_result, f"Error: JSON parsing failed after repair attempt.\n{parse_log}"
+        
+        # Validate and sanitize transactions
+        if 'transactions' in result_data:
+            original_count = len(result_data.get('transactions', []))
+            result_data['transactions'] = validate_and_sanitize_transactions(result_data['transactions'])
+            sanitized_count = len(result_data['transactions'])
+            if original_count != sanitized_count:
+                parse_log += f"\nSanitized transactions: {original_count} -> {sanitized_count}"
         
         reasoning_log = result_data.get("reasoning", "No reasoning provided")
+        if parse_log and parse_log != "JSON parsed successfully":
+            reasoning_log = f"[Parse Log: {parse_log}]\n\n{reasoning_log}"
         
         return result_data, reasoning_log
         
     except Exception as e:
         print(f"Error in OpenAI Vision extraction: {e}")
-        return {
-            "error": str(e),
-            "info_needed": {
-                "total_monthly_payments": 0,
-                "diesel_total_monthly_payments": 0,
-                "total_monthly_payments_with_diesel": 0,
-                "average_monthly_income": 0,
-                "annual_income": 0,
-                "length_of_deal_months": 0,
-                "holdback_percentage": 0,
-                "monthly_holdback": 0,
-                "monthly_payment_to_income_pct": 0,
-                "original_balance_to_annual_income_pct": 0
-            },
-            "daily_positions": [],
-            "weekly_positions": [],
-            "monthly_positions_non_mca": [],
-            "bank_accounts": {},
-            "total_revenues_by_month": {},
-            "deductions": {},
-            "transactions": [],
-            "nsf_count": 0
-        }, f"Error: {str(e)}"
+        default_result = get_default_extraction_result()
+        default_result["error"] = str(e)
+        return default_result, f"Error: {str(e)}"
 
 def generate_underwriting_summary(
     financial_data: Dict,
