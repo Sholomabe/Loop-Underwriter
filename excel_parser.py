@@ -447,78 +447,43 @@ def parse_monthly_positions_non_mca(df: pd.DataFrame, log: List[str]) -> List[Di
     """Parse the Monthly Positions (non MCA) section.
     
     Layout (user confirmed):
-    Row 26: Monthly Positions (non MCA) | [headers if any]
-    Row 27+: Data rows with columns 3-4 as name, column 5 as monthly payment
-    
-    Note: This section may have headers on row 26 or start data on row 27
-    Column 2 = section label area
-    Columns 3-4 = Name (may span 2 columns)
-    Column 5 = Monthly Payment
+    Row 26: HEADERS (column 2 = section label, columns 3-4 = name headers, column 5 = monthly payment header)
+    Rows 27-30: DATA rows with name in cols 3-4, monthly payment in col 5
     """
     positions = []
     log.append("--- MONTHLY POSITIONS (NON MCA) PARSING ---")
     
-    # Debug: Show what's in row 26 (0-indexed: 25) to help find the section
-    if len(df) > 25:
-        row26_preview = []
-        for c in range(min(8, len(df.columns))):
-            val = df.iloc[25, c] if pd.notna(df.iloc[25, c]) else ''
-            row26_preview.append(f"col{c+1}='{val}'")
-        log.append(f"Row 26 preview: {', '.join(row26_preview)}")
+    # User confirmed: Row 26 is HEADERS, data is in rows 27-30
+    # Using FIXED locations (0-indexed: row 25 = headers, rows 26-29 = data)
+    header_row = 25  # Row 26 in Excel (0-indexed)
+    data_start_row = 26  # Row 27 in Excel (0-indexed)
+    data_end_row = 29  # Row 30 in Excel (0-indexed)
     
-    # Try multiple search terms
-    search_terms = ['monthly positions', 'monthly (non', 'non mca', 'monthly pos']
-    location = None
-    for term in search_terms:
-        location = find_cell_location(df, [term])
-        if location:
-            log.append(f"Found section using search term: '{term}'")
-            break
-    
-    # Fallback: Check fixed row 26, col 2 (0-indexed: row 25, col 1)
-    if not location and len(df) > 25 and len(df.columns) > 1:
-        cell_val = df.iloc[25, 1]  # Row 26, Col 2
-        if pd.notna(cell_val):
-            cell_str = str(cell_val).strip().lower()
-            log.append(f"Checking fixed location row 26, col 2: '{cell_val}'")
-            if 'monthly' in cell_str or 'position' in cell_str or 'non' in cell_str:
-                location = (25, 1)
-                log.append(f"Using fixed location row 26, col 2")
-    
-    if not location:
-        log.append("Could not find 'Monthly Positions (non MCA)' section")
-        return positions
-    
-    header_row, start_col = location
-    log.append(f"Found 'Monthly Positions (non MCA)' at row {header_row+1}, col {start_col+1}")
-    
-    # Debug: Show what's in the header row
-    row_preview = []
-    for c in range(max(0, start_col), min(start_col + 8, len(df.columns))):
-        val = df.iloc[header_row, c] if pd.notna(df.iloc[header_row, c]) else ''
-        row_preview.append(f"col{c+1}='{val}'")
-    log.append(f"  Header row content: {', '.join(row_preview)}")
-    
-    # Per user: columns 3-4 = name, column 5 = monthly payment (0-indexed: cols 2-3 = name, col 4 = payment)
-    # But we need to adjust based on where the section header is found
+    # Columns: 2 = label, 3-4 = name, 5 = monthly payment (0-indexed: 1, 2-3, 4)
     name_col_1 = 2  # Column 3 (0-indexed: 2)
     name_col_2 = 3  # Column 4 (0-indexed: 3)
     payment_col = 4  # Column 5 (0-indexed: 4)
     
-    log.append(f"  Using fixed columns: Name cols {name_col_1+1}-{name_col_2+1}, Payment col {payment_col+1}")
+    # Debug: Show what's in the header row (row 26)
+    if len(df) > header_row:
+        row26_preview = []
+        for c in range(min(8, len(df.columns))):
+            val = df.iloc[header_row, c] if pd.notna(df.iloc[header_row, c]) else ''
+            row26_preview.append(f"col{c+1}='{val}'")
+        log.append(f"Row 26 (headers): {', '.join(row26_preview)}")
     
-    # Data starts on row BELOW the header
-    data_row = header_row + 1
+    log.append(f"Using fixed layout: Headers at row 26, Data in rows 27-30, cols 3-4=name, col 5=payment")
     
-    # Debug: Show first data row
-    if data_row < len(df):
-        data_row_preview = []
-        for c in range(max(0, name_col_1), min(payment_col + 2, len(df.columns))):
+    # Debug: Show all data rows
+    for data_row in range(data_start_row, min(data_end_row + 1, len(df))):
+        row_preview = []
+        for c in range(1, min(6, len(df.columns))):  # cols 2-6
             val = df.iloc[data_row, c] if pd.notna(df.iloc[data_row, c]) else ''
-            data_row_preview.append(f"col{c+1}='{val}'")
-        log.append(f"  First data row ({data_row+1}) content: {', '.join(data_row_preview)}")
+            row_preview.append(f"col{c+1}='{val}'")
+        log.append(f"Row {data_row+1}: {', '.join(row_preview)}")
     
-    while data_row < len(df):
+    # Read data from rows 27-30 (0-indexed: 26-29)
+    for data_row in range(data_start_row, min(data_end_row + 1, len(df))):
         # Get name from columns 3-4 (concatenate if both have values)
         name_part1 = df.iloc[data_row, name_col_1] if name_col_1 < len(df.columns) and pd.notna(df.iloc[data_row, name_col_1]) else ''
         name_part2 = df.iloc[data_row, name_col_2] if name_col_2 < len(df.columns) and pd.notna(df.iloc[data_row, name_col_2]) else ''
@@ -536,14 +501,10 @@ def parse_monthly_positions_non_mca(df: pd.DataFrame, log: List[str]) -> List[Di
         else:
             name_value = ''
         
-        # Stop if name is empty
+        # Skip if name is empty
         if not name_value:
-            break
-        
-        # Stop if we hit another section
-        first_col_value = str(df.iloc[data_row, start_col]).lower() if pd.notna(df.iloc[data_row, start_col]) else ''
-        if any(term in first_col_value for term in ['bank account', 'bank accoount', 'total revenues', 'deduction']):
-            break
+            log.append(f"  Row {data_row+1}: Empty name, skipping")
+            continue
         
         # Get monthly payment from column 5
         monthly_payment = parse_numeric(df.iloc[data_row, payment_col]) if payment_col < len(df.columns) else 0.0
@@ -554,11 +515,9 @@ def parse_monthly_positions_non_mca(df: pd.DataFrame, log: List[str]) -> List[Di
             'monthly_payment': monthly_payment
         }
         positions.append(position)
-        log.append(f"  Position: {position['name']} - Monthly Payment: ${position['monthly_payment']:,.2f}")
-        
-        data_row += 1
+        log.append(f"  Found: {position['name']} - Monthly Payment: ${position['monthly_payment']:,.2f}")
     
-    log.append(f"Found {len(positions)} monthly (non MCA) positions")
+    log.append(f"Total monthly (non MCA) positions found: {len(positions)}")
     return positions
 
 

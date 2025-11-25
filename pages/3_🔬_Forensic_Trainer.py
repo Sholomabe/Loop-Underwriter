@@ -129,6 +129,32 @@ if truth_input_method == "📊 Upload Excel File":
             else:
                 st.info("No Daily Positions found in the spreadsheet")
             
+            # WEEKLY POSITIONS SECTION
+            st.markdown("### 📅 Weekly Positions")
+            weekly_positions = extracted_data.get('weekly_positions', [])
+            if weekly_positions:
+                import pandas as pd
+                weekly_df = pd.DataFrame(weekly_positions)
+                weekly_df.columns = ['Name', 'Amount', 'Monthly Payment']
+                weekly_df['Amount'] = weekly_df['Amount'].apply(lambda x: f"${x:,.2f}")
+                weekly_df['Monthly Payment'] = weekly_df['Monthly Payment'].apply(lambda x: f"${x:,.2f}")
+                st.dataframe(weekly_df, use_container_width=True, hide_index=True)
+            else:
+                st.info("No Weekly Positions found in the spreadsheet")
+            
+            # MONTHLY POSITIONS (NON MCA) SECTION
+            st.markdown("### 📆 Monthly Positions (non MCA)")
+            monthly_non_mca = extracted_data.get('monthly_positions_non_mca', [])
+            if monthly_non_mca:
+                import pandas as pd
+                monthly_df = pd.DataFrame(monthly_non_mca)
+                monthly_df = monthly_df[['name', 'monthly_payment']]  # Only show name and payment
+                monthly_df.columns = ['Name', 'Monthly Payment']
+                monthly_df['Monthly Payment'] = monthly_df['Monthly Payment'].apply(lambda x: f"${x:,.2f}")
+                st.dataframe(monthly_df, use_container_width=True, hide_index=True)
+            else:
+                st.info("No Monthly Positions (non MCA) found in the spreadsheet")
+            
             # BANK ACCOUNTS SECTION
             st.markdown("### 🏦 Bank Account Data")
             bank_accounts = extracted_data.get('bank_accounts', {})
