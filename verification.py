@@ -33,6 +33,30 @@ def is_not_computable(value) -> bool:
     return False
 
 
+def sanitize_transactions(transactions: list) -> List[Dict]:
+    """
+    Filter and sanitize a transactions list to ensure all elements are dictionaries.
+    
+    This handles cases where the AI returns malformed data like integers
+    or other non-dict types in the transactions array.
+    
+    Args:
+        transactions: Raw transactions list (may contain non-dict elements)
+        
+    Returns:
+        List of only valid transaction dictionaries
+    """
+    if not transactions:
+        return []
+    
+    valid_transactions = []
+    for txn in transactions:
+        if isinstance(txn, dict):
+            valid_transactions.append(txn)
+    
+    return valid_transactions
+
+
 def analyze_transaction_types(transactions: List[Dict]) -> Dict:
     """
     Analyze transaction types to detect debit-only or credit-only datasets.
@@ -112,6 +136,9 @@ def verify_extraction_math(extracted_data: Dict, transactions: list) -> Tuple[bo
         - is_valid: True if verification passes
         - error_message: None if valid, otherwise detailed error description
     """
+    # Sanitize transactions to ensure all are dictionaries (handles malformed AI output)
+    transactions = sanitize_transactions(transactions)
+    
     if not transactions:
         return True, None  # No transactions to verify
     
