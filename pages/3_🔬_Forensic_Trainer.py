@@ -363,11 +363,13 @@ with st.form("upload_training_deal"):
                     existing_pdf = db.query(PDFFile).filter(PDFFile.file_hash == pdf_hash).first()
                     
                     if existing_pdf:
-                        # PDF already processed before - update to link to this training deal
+                        # PDF already processed before - create unique hash for training
+                        # Truncate original hash and add short suffix to stay within 64 chars
+                        unique_hash = pdf_hash[:50] + f"_t{training_deal.id}"[:14]
                         pdf_file = PDFFile(
                             deal_id=training_deal.id,
                             file_path=pdf_path,
-                            file_hash=pdf_hash + f"_training_{training_deal.id}",  # Make unique for training
+                            file_hash=unique_hash,
                             account_number=account_number,
                             account_status=account_status,
                             created_at=datetime.utcnow()
