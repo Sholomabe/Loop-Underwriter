@@ -1,6 +1,7 @@
 import pandas as pd
+import re
 from datetime import datetime, timedelta
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 
 def safe_float(value, default=0.0) -> float:
@@ -21,9 +22,144 @@ def safe_float(value, default=0.0) -> float:
     return default
 
 
+# Known lender keywords for debt identification
+KNOWN_LENDER_KEYWORDS = [
+    "financing", "capital", "funding", "advance", "lending", 
+    "merchant", "mca", "loan", "credit", "payoff", "factor",
+    "business funding", "cash advance", "working capital"
+]
+
+
+def is_explicit_internal_transfer(description: Optional[str], known_account_numbers: Optional[List[str]] = None) -> bool:
+    """
+    Check if a transaction is an EXPLICIT internal transfer based on description.
+    
+    NEW RULE: Only exclude deposits as "Internal Transfers" if:
+    a) The description explicitly says "Online Transfer from Chk... [Last 4 of merchant's accounts]"
+    b) OR the text explicitly says "Intra-bank Transfer"
+    
+    Args:
+        description: Transaction description
+        known_account_numbers: List of known account numbers for this merchant
+    
+    Returns:
+        True only if this is an explicit internal transfer
+    """
+    if not description:
+        return False
+    
+    desc_lower = description.lower().strip()
+    
+    # Pattern 1: Explicit "Intra-bank Transfer"
+    if "intra-bank transfer" in desc_lower or "intrabank transfer" in desc_lower:
+        return True
+    
+    # Pattern 2: "Online Transfer from Chk..." with known account numbers
+    online_transfer_pattern = r"online\s+transfer\s+from\s+chk\s*\.?\s*(\d{4})"
+    match = re.search(online_transfer_pattern, desc_lower)
+    
+    if match and known_account_numbers:
+        last_4 = match.group(1)
+        # Check if the last 4 digits match any known account
+        for acct in known_account_numbers:
+            if acct and str(acct).endswith(last_4):
+                return True
+    
+    # Pattern 3: Other explicit internal transfer keywords
+    explicit_patterns = [
+        "transfer between accounts",
+        "internal transfer",
+        "account to account transfer",
+        "transfer to savings",
+        "transfer from savings",
+        "funds transfer internal"
+    ]
+    
+    for pattern in explicit_patterns:
+        if pattern in desc_lower:
+            return True
+    
+    return False
+
+
+def is_related_entity_revenue(sender_name: Optional[str], merchant_name: Optional[str], description: Optional[str]) -> bool:
+    """
+    Check if a transfer from a "related entity" should be treated as REVENUE.
+    
+    Related entities (e.g., "Big World Enterprises" -> "Big World Travel") should be
+    counted as revenue, NOT excluded as internal transfers.
+    
+    Args:
+        sender_name: Name of the sender/payer
+        merchant_name: Name of the merchant/business
+        description: Transaction description
+    
+    Returns:
+        True if this appears to be revenue from a related entity
+    """
+    if not sender_name or not merchant_name:
+        return False
+    
+    sender_lower = sender_name.lower().strip()
+    merchant_lower = merchant_name.lower().strip()
+    
+    # If exact match, it's not a related entity - it's the same entity
+    if sender_lower == merchant_lower:
+        return False
+    
+    # Check for fuzzy match - might be related entity
+    # Extract the first significant word from each name
+    sender_words = [w for w in sender_lower.split() if len(w) > 2]
+    merchant_words = [w for w in merchant_lower.split() if len(w) > 2]
+    
+    if not sender_words or not merchant_words:
+        return False
+    
+    # If they share a significant common word, they might be related
+    common_words = set(sender_words) & set(merchant_words)
+    
+    # Exclude common business words
+    business_words = {"inc", "llc", "corp", "company", "enterprises", "group", "services"}
+    significant_common = common_words - business_words
+    
+    # If they share a significant word (like "Big World"), treat as related entity revenue
+    if significant_common:
+        return True
+    
+    return False
+
+
+def is_known_lender_payment(description: Optional[str], amount) -> bool:
+    """
+    Check if a debit matches known lender keywords.
+    
+    NEW RULE: If a recurring debit matches ANY of the Known_Lender_Keywords,
+    it should be flagged as a potential MCA/lending position.
+    
+    Args:
+        description: Transaction description
+        amount: Transaction amount (should be negative for debits)
+    
+    Returns:
+        True if this matches lender keywords
+    """
+    if not description or amount >= 0:
+        return False
+    
+    desc_lower = description.lower()
+    
+    for keyword in KNOWN_LENDER_KEYWORDS:
+        if keyword in desc_lower:
+            return True
+    
+    return False
+
+
 def find_inter_account_transfers(
     transactions: List[Dict],
-    window_days: int = 2
+    window_days: int = 2,
+    known_account_numbers: Optional[List[str]] = None,
+    merchant_name: Optional[str] = None
 ) -> List[Dict]:
     """
     Identify inter-account transfers using the Transfer Hunter algorithm.
@@ -61,9 +197,12 @@ def find_inter_account_transfers(
     if df['transaction_date'].dtype == 'object':
         df['transaction_date'] = pd.to_datetime(df['transaction_date'], errors='coerce')
     
-    # Initialize transfer flags
+    # Initialize transfer flags and lender flags
     df['is_internal_transfer'] = False
     df['matched_transfer_id'] = None
+    df['is_lender_payment'] = False
+    df['transfer_reason'] = None
+    df['user_override'] = False  # For UI toggle functionality
     
     # Sort by date for efficient matching
     df = df.sort_values('transaction_date')
@@ -71,17 +210,34 @@ def find_inter_account_transfers(
     # Track matched transactions to avoid double-matching
     matched_ids = set()
     
-    # Iterate through transactions to find matches
+    # STEP 1: First, identify explicit internal transfers based on description
+    # NEW RULE: Only exclude deposits if description EXPLICITLY says it's internal
+    for idx, row in df.iterrows():
+        description = row.get('description', '')
+        amount = row['amount']
+        
+        # Check if this is an EXPLICIT internal transfer
+        if is_explicit_internal_transfer(description, known_account_numbers):
+            df.at[idx, 'is_internal_transfer'] = True
+            df.at[idx, 'transfer_reason'] = 'explicit_transfer_description'
+            matched_ids.add(row['id'])
+        
+        # Check if this is a lender payment (debit matching known lender keywords)
+        if is_known_lender_payment(description, amount):
+            df.at[idx, 'is_lender_payment'] = True
+    
+    # STEP 2: Find amount-matched transfers between different accounts
+    # BUT only mark as transfer if it's not a related entity revenue
     for idx, row in df.iterrows():
         if row['id'] in matched_ids:
             continue
         
-        amount = row['amount']  # Now already a float
+        amount = row['amount']
         date = row['transaction_date']
         account = row['source_account_id']
+        description = row.get('description', '')
         
         # Look for opposite amount in different account within window
-        # If current is debit (-X), look for credit (+X) in another account
         target_amount = -amount
         date_min = date - timedelta(days=window_days)
         date_max = date + timedelta(days=window_days)
@@ -91,27 +247,41 @@ def find_inter_account_transfers(
             (df['id'] != row['id']) &
             (df['id'].isin(matched_ids) == False) &
             (df['source_account_id'] != account) &
-            (df['amount'].between(target_amount * 0.99, target_amount * 1.01)) &  # Allow 1% tolerance
+            (df['amount'].between(target_amount * 0.99, target_amount * 1.01)) &
             (df['transaction_date'] >= date_min) &
             (df['transaction_date'] <= date_max)
         ]
         
         if len(matches) > 0:
             # Take the closest match by date
-            matches['date_diff'] = (matches['transaction_date'] - date).abs()
-            best_match = matches.sort_values('date_diff').iloc[0]
+            matches_copy = matches.copy()
+            matches_copy['date_diff'] = (matches_copy['transaction_date'] - date).abs()
+            best_match = matches_copy.sort_values('date_diff').iloc[0]
             
-            # Mark both transactions as internal transfers
-            df.at[idx, 'is_internal_transfer'] = True
-            df.at[idx, 'matched_transfer_id'] = best_match['id']
+            # NEW RULE: Check if this is a related entity transfer (should be revenue)
+            sender_name = description  # In bank statements, description often contains sender
             
-            match_idx = df[df['id'] == best_match['id']].index[0]
-            df.at[match_idx, 'is_internal_transfer'] = True
-            df.at[match_idx, 'matched_transfer_id'] = row['id']
+            if is_related_entity_revenue(sender_name, merchant_name or '', description):
+                # This is revenue from a related entity, NOT an internal transfer
+                df.at[idx, 'transfer_reason'] = 'related_entity_revenue'
+                continue
             
-            # Mark as matched
-            matched_ids.add(row['id'])
-            matched_ids.add(best_match['id'])
+            # Check if the matched transaction description indicates explicit transfer
+            match_desc = best_match.get('description', '')
+            if is_explicit_internal_transfer(description, known_account_numbers) or \
+               is_explicit_internal_transfer(match_desc, known_account_numbers):
+                # Mark both transactions as internal transfers
+                df.at[idx, 'is_internal_transfer'] = True
+                df.at[idx, 'matched_transfer_id'] = best_match['id']
+                df.at[idx, 'transfer_reason'] = 'matched_amount_explicit'
+                
+                match_idx = df[df['id'] == best_match['id']].index[0]
+                df.at[match_idx, 'is_internal_transfer'] = True
+                df.at[match_idx, 'matched_transfer_id'] = row['id']
+                df.at[match_idx, 'transfer_reason'] = 'matched_amount_explicit'
+                
+                matched_ids.add(row['id'])
+                matched_ids.add(best_match['id'])
     
     # Convert back to list of dicts
     result = df.to_dict('records')
@@ -167,8 +337,273 @@ def get_transfer_summary(transactions: List[Dict]) -> Dict:
                 'amount': txn.get('amount'),
                 'account': txn.get('source_account_id'),
                 'description': txn.get('description', ''),
-                'matched_with': txn.get('matched_transfer_id')
+                'matched_with': txn.get('matched_transfer_id'),
+                'transfer_reason': txn.get('transfer_reason', ''),
+                'user_override': txn.get('user_override', False)
             }
             for txn in transactions if txn.get('is_internal_transfer', False)
         ]
     }
+
+
+def calculate_revenue_with_overrides(transactions: List[Dict], overrides: Optional[Dict] = None) -> Dict:
+    """
+    Calculate revenue with user override support.
+    
+    Args:
+        transactions: List of transaction dicts
+        overrides: Dict mapping transaction IDs to include_in_revenue boolean
+    
+    Returns:
+        Dict with revenue calculation and breakdown
+    """
+    overrides = overrides or {}
+    
+    total_revenue = 0.0
+    included_transfers = 0
+    excluded_count = 0
+    
+    revenue_breakdown = []
+    
+    for txn in transactions:
+        amount = safe_float(txn.get('amount', 0))
+        txn_id = txn.get('id')
+        
+        if amount > 0:  # Credit/deposit
+            is_transfer = txn.get('is_internal_transfer', False)
+            user_override = overrides.get(txn_id, None)
+            
+            # Determine if we should include in revenue
+            if user_override is True:
+                # User explicitly wants to include this
+                total_revenue += amount
+                included_transfers += 1 if is_transfer else 0
+                include = True
+            elif user_override is False:
+                # User explicitly wants to exclude this
+                excluded_count += 1
+                include = False
+            elif is_transfer:
+                # Default: exclude internal transfers
+                excluded_count += 1
+                include = False
+            else:
+                # Default: include non-transfers
+                total_revenue += amount
+                include = True
+            
+            revenue_breakdown.append({
+                'id': txn_id,
+                'amount': amount,
+                'description': txn.get('description', ''),
+                'is_transfer': is_transfer,
+                'included': include,
+                'reason': txn.get('transfer_reason', ''),
+                'user_override': user_override
+            })
+    
+    return {
+        'total_revenue': total_revenue,
+        'excluded_count': excluded_count,
+        'included_transfers': included_transfers,
+        'breakdown': revenue_breakdown
+    }
+
+
+def detect_lender_positions(
+    transactions: List[Dict],
+    min_occurrences: int = 2
+) -> List[Dict]:
+    """
+    Detect lender/MCA positions from transactions with STACKING support.
+    
+    NEW RULE: If a Lender appears with DIFFERENT amounts or frequencies
+    in the same month, list BOTH as separate active positions (stacking).
+    
+    Only consolidate to one position if a "Payoff" deposit is detected.
+    
+    Args:
+        transactions: List of transaction dicts
+        min_occurrences: Minimum occurrences to consider it a position
+    
+    Returns:
+        List of detected positions with stacking info
+    """
+    if not transactions:
+        return []
+    
+    # Group debits by lender name and analyze patterns
+    lender_transactions = {}
+    
+    for txn in transactions:
+        amount = safe_float(txn.get('amount', 0))
+        description = txn.get('description', '')
+        date = txn.get('transaction_date')
+        
+        # Only analyze debits (negative amounts) that match lender keywords
+        if amount >= 0:
+            continue
+        
+        # Check if this matches lender keywords
+        if not is_known_lender_payment(description, amount):
+            continue
+        
+        # Extract lender name from description
+        lender_name = extract_lender_name(description)
+        
+        if lender_name not in lender_transactions:
+            lender_transactions[lender_name] = []
+        
+        lender_transactions[lender_name].append({
+            'amount': abs(amount),
+            'date': date,
+            'description': description
+        })
+    
+    # Analyze each lender for stacking
+    positions = []
+    
+    for lender_name, txns in lender_transactions.items():
+        if len(txns) < min_occurrences:
+            continue
+        
+        # Group by unique amounts to detect stacking
+        amount_groups = {}
+        for txn in txns:
+            amt = round(txn['amount'], 2)
+            if amt not in amount_groups:
+                amount_groups[amt] = []
+            amount_groups[amt].append(txn)
+        
+        # Detect frequency for each amount group
+        for amount, group_txns in amount_groups.items():
+            if len(group_txns) < min_occurrences:
+                continue
+            
+            frequency = detect_payment_frequency(group_txns)
+            
+            # Calculate monthly payment equivalent
+            if frequency == 'daily':
+                monthly_payment = amount * 22  # ~22 business days
+            elif frequency == 'weekly':
+                monthly_payment = amount * 4.33
+            else:
+                monthly_payment = amount
+            
+            positions.append({
+                'lender_name': lender_name,
+                'amount': amount,
+                'frequency': frequency,
+                'monthly_payment': round(monthly_payment, 2),
+                'occurrence_count': len(group_txns),
+                'is_stacked': len(amount_groups) > 1,
+                'stack_count': len(amount_groups)
+            })
+    
+    return positions
+
+
+def extract_lender_name(description: str) -> str:
+    """Extract lender name from transaction description."""
+    if not description:
+        return "Unknown Lender"
+    
+    # Common prefixes to remove
+    prefixes = ['ach debit', 'ach credit', 'wire', 'transfer', 'payment to', 'payment from']
+    
+    desc_lower = description.lower().strip()
+    
+    for prefix in prefixes:
+        if desc_lower.startswith(prefix):
+            desc_lower = desc_lower[len(prefix):].strip()
+    
+    # Take first significant portion
+    words = desc_lower.split()
+    significant_words = [w for w in words[:4] if len(w) > 2]
+    
+    if significant_words:
+        return ' '.join(significant_words).title()
+    
+    return description[:30]
+
+
+def detect_payment_frequency(transactions: List[Dict]) -> str:
+    """
+    Detect payment frequency from transaction dates.
+    
+    Returns: 'daily', 'weekly', or 'monthly'
+    """
+    if len(transactions) < 2:
+        return 'monthly'
+    
+    # Sort by date
+    sorted_txns = sorted(transactions, key=lambda x: x.get('date') or '')
+    
+    # Calculate average days between payments
+    total_days = 0
+    count = 0
+    
+    for i in range(1, len(sorted_txns)):
+        date1 = sorted_txns[i-1].get('date')
+        date2 = sorted_txns[i].get('date')
+        
+        if date1 and date2:
+            try:
+                if isinstance(date1, str):
+                    date1 = pd.to_datetime(date1)
+                if isinstance(date2, str):
+                    date2 = pd.to_datetime(date2)
+                
+                days_diff = abs((date2 - date1).days)
+                if days_diff > 0:
+                    total_days += days_diff
+                    count += 1
+            except:
+                pass
+    
+    if count == 0:
+        return 'monthly'
+    
+    avg_days = total_days / count
+    
+    if avg_days <= 2:
+        return 'daily'
+    elif avg_days <= 10:
+        return 'weekly'
+    else:
+        return 'monthly'
+
+
+def check_for_payoff(
+    transactions: List[Dict],
+    lender_name: str
+) -> bool:
+    """
+    Check if there's a payoff deposit for a lender.
+    
+    If found, it suggests the position was refinanced/paid off
+    and shouldn't be stacked with new position.
+    
+    Args:
+        transactions: List of all transactions
+        lender_name: Name of the lender to check
+    
+    Returns:
+        True if payoff detected
+    """
+    lender_lower = lender_name.lower()
+    
+    for txn in transactions:
+        amount = safe_float(txn.get('amount', 0))
+        description = txn.get('description', '').lower()
+        
+        # Look for credits (payoffs) mentioning this lender
+        if amount > 0:
+            if lender_lower in description:
+                # Check for payoff keywords
+                payoff_keywords = ['payoff', 'pay off', 'refund', 'settlement', 'paid in full']
+                for keyword in payoff_keywords:
+                    if keyword in description:
+                        return True
+    
+    return False

@@ -4,6 +4,12 @@ import os
 from database import get_db
 from models import Deal, PDFFile, Transaction, TrainingExample, GoldStandardRule
 from datetime import datetime
+from transfer_hunter import (
+    calculate_revenue_with_overrides,
+    detect_lender_positions,
+    safe_float,
+    KNOWN_LENDER_KEYWORDS
+)
 
 st.set_page_config(page_title="Deal Details", page_icon="📄", layout="wide")
 
@@ -157,6 +163,33 @@ with get_db() as db:
     if transactions:
         import pandas as pd
         
+        # Initialize override session state
+        if f'transfer_overrides_{deal.id}' not in st.session_state:
+            st.session_state[f'transfer_overrides_{deal.id}'] = {}
+        
+        overrides = st.session_state[f'transfer_overrides_{deal.id}']
+        
+        # Convert transactions to list of dicts for revenue calculation
+        txn_list = []
+        for txn in transactions:
+            txn_list.append({
+                'id': txn.id,
+                'amount': txn.amount,
+                'description': txn.description,
+                'is_internal_transfer': txn.is_internal_transfer,
+                'transaction_date': txn.transaction_date,
+                'source_account_id': txn.source_account_id,
+                'transaction_type': txn.transaction_type,
+                'category': txn.category,
+                'matched_transfer_id': txn.matched_transfer_id
+            })
+        
+        # Calculate revenue with overrides
+        revenue_result = calculate_revenue_with_overrides(txn_list, overrides)
+        
+        # Detect lender positions with stacking
+        detected_positions = detect_lender_positions(txn_list)
+        
         txn_data = []
         for txn in transactions:
             txn_data.append({
@@ -173,23 +206,112 @@ with get_db() as db:
         
         txn_df = pd.DataFrame(txn_data)
         
-        # Show transfer statistics
+        # Show revenue metrics with override support
         transfer_count = sum(1 for txn in transactions if txn.is_internal_transfer)
-        transfer_amount = sum(abs(txn.amount) for txn in transactions if txn.is_internal_transfer) / 2
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Total Transactions", len(transactions))
         with col2:
-            st.metric("Internal Transfers Detected", transfer_count)
+            st.metric("Internal Transfers", transfer_count)
         with col3:
-            st.metric("Transfer Amount (Total)", f"${transfer_amount:,.2f}")
+            st.metric("Net Revenue", f"${revenue_result['total_revenue']:,.2f}")
+        with col4:
+            months = 4  # Approximate months in statement
+            monthly_avg = revenue_result['total_revenue'] / months if months > 0 else 0
+            st.metric("Monthly Average", f"${monthly_avg:,.2f}")
         
         st.dataframe(txn_df, use_container_width=True)
         
+        # Revenue Breakdown with Toggle Switches
+        st.divider()
+        st.subheader("💰 Revenue Breakdown")
+        
+        if revenue_result['breakdown']:
+            st.markdown("**Excluded Transfers - Toggle to include in revenue:**")
+            
+            # Get all excluded items (transfers and deposits marked as excluded)
+            excluded_items = [item for item in revenue_result['breakdown'] if not item['included']]
+            
+            if excluded_items:
+                # Track if any toggles changed
+                toggles_changed = False
+                new_overrides = overrides.copy()
+                
+                for item in excluded_items:
+                    col1, col2, col3 = st.columns([3, 1, 1])
+                    
+                    with col1:
+                        desc = item['description'][:60] + '...' if len(item['description']) > 60 else item['description']
+                        st.write(f"**${item['amount']:,.2f}** - {desc}")
+                        if item['reason']:
+                            st.caption(f"Reason: {item['reason']}")
+                    
+                    with col2:
+                        # Toggle switch for including in revenue
+                        current_val = overrides.get(item['id'], False)
+                        include = st.toggle(
+                            "Include?",
+                            value=current_val,
+                            key=f"toggle_{deal.id}_{item['id']}"
+                        )
+                        
+                        # Track changes
+                        if include != current_val:
+                            new_overrides[item['id']] = include
+                            toggles_changed = True
+                    
+                    with col3:
+                        if item['is_transfer']:
+                            st.write("🔄 Transfer")
+                        else:
+                            st.write("📥 Deposit")
+                    
+                    st.divider()
+                
+                # Apply button to recalculate
+                if st.button("🔄 Recalculate Revenue", key=f"recalc_{deal.id}"):
+                    st.session_state[f'transfer_overrides_{deal.id}'] = new_overrides
+                    st.rerun()
+                
+                if toggles_changed:
+                    st.info("Click 'Recalculate Revenue' to update totals with your selections")
+            else:
+                st.success("No excluded transfers - all deposits are included in revenue")
+            
+            # Show included transfers (user overrides)
+            if revenue_result['included_transfers'] > 0:
+                st.info(f"✅ {revenue_result['included_transfers']} transfers manually included in revenue by user")
+        
+        # Detected Lender Positions with Stacking
+        if detected_positions:
+            st.divider()
+            st.subheader("🏦 Detected Lender Positions")
+            
+            stacked_count = sum(1 for p in detected_positions if p.get('is_stacked', False))
+            
+            if stacked_count > 0:
+                st.warning(f"⚠️ {stacked_count} positions show stacking (same lender, different amounts)")
+            
+            positions_df = pd.DataFrame([
+                {
+                    'Lender': p['lender_name'],
+                    'Amount': f"${p['amount']:,.2f}",
+                    'Frequency': p['frequency'].title(),
+                    'Monthly Payment': f"${p['monthly_payment']:,.2f}",
+                    'Occurrences': p['occurrence_count'],
+                    'Stacked?': '⚠️ Yes' if p.get('is_stacked') else 'No'
+                }
+                for p in detected_positions
+            ])
+            
+            st.dataframe(positions_df, use_container_width=True)
+            
+            st.caption(f"**Known Lender Keywords:** {', '.join(KNOWN_LENDER_KEYWORDS[:8])}...")
+        
         # Highlight transfers
         if transfer_count > 0:
-            st.info(f"💡 {transfer_count} transactions identified as internal transfers and excluded from revenue calculation")
+            st.info(f"💡 {transfer_count} transactions identified as internal transfers. Use toggles above to override and recalculate revenue.")
     else:
         st.info("No transaction data available")
     

@@ -75,6 +75,12 @@ List each monthly position with:
 - Name: Creditor/Lender name
 - Monthly Payment: Monthly payment amount
 
+IMPORTANT - LENDER DETECTION:
+- Look for ANY recurring debits containing these keywords: Financing, Capital, Funding, Advance, Lending, Merchant, MCA, Loan, Factor
+- Examples: "Intuit Financing", "Oat Financial", "ABC Capital" - these are ALL lender positions even if small amounts
+- If a lender appears with DIFFERENT amounts or frequencies, list BOTH as separate positions (stacking)
+- Only consolidate positions if you see a "Payoff" credit from that lender
+
 ## 5. BANK ACCOUNT DATA (Per-account monthly breakdown)
 For each bank account identified, extract per-month data:
 - Account Name/Number
@@ -82,6 +88,13 @@ For each bank account identified, extract per-month data:
 
 ## 6. TOTAL REVENUES BY MONTH
 Monthly revenue totals across all accounts
+
+IMPORTANT - TRANSFER CLASSIFICATION:
+- ONLY exclude deposits as "Internal Transfers" if:
+  a) Description says "Online Transfer from Chk... [account number]" where the account number matches another known account
+  b) OR description says "Intra-bank Transfer" or "Internal Transfer"
+- Transfers from "Related Entities" (e.g., "Big World Enterprises" -> "Big World Travel") should be counted as REVENUE
+- Do NOT exclude deposits just because sender name is similar to merchant name
 
 ## 7. DEDUCTIONS
 Monthly deduction amounts per account
@@ -96,6 +109,7 @@ CRITICAL INSTRUCTIONS:
 4. Show your mathematical reasoning
 5. If data is not present, use 0 or empty array
 6. Verify sums match your calculations
+7. Mark each transaction as lender_payment: true if it matches lender keywords
 
 Output format must be JSON with this EXACT structure:
 {

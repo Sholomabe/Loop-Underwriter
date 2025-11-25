@@ -296,6 +296,24 @@ Response:
     - Match/mismatch indicators for each field
   - **Updated adversarial_correction_prompt** to handle nested data structure and compare all fields
 
+- **2024-11-25**: Underwriting Logic Fixes (4 improvements)
+  - **Refined Transfer Logic (Revenue Fix):**
+    - Only exclude deposits as "Internal Transfers" if description explicitly says "Online Transfer from Chk..." or "Intra-bank Transfer"
+    - Added is_explicit_internal_transfer() and is_related_entity_revenue() functions
+    - Related entities (e.g., "Big World Enterprises" -> "Big World Travel") now treated as REVENUE
+  - **Debt Identification (Small Lenders):**
+    - Added KNOWN_LENDER_KEYWORDS list (financing, capital, funding, advance, lending, etc.)
+    - Added is_known_lender_payment() function to detect lender payments
+    - Updated OpenAI prompt to include lender detection instructions
+  - **Stacking Logic (Positions):**
+    - Added detect_lender_positions() function with stacking support
+    - If same lender appears with different amounts/frequencies, both listed as separate positions
+    - Added check_for_payoff() to detect if position was refinanced
+  - **UI Update (Revenue Toggle):**
+    - Added toggle switches for excluded transfers in Deal Details page
+    - Added "Recalculate Revenue" button for instant recalculation
+    - Added "Detected Lender Positions" section showing stacked positions
+
 ## User Preferences
 None specified yet.
 
