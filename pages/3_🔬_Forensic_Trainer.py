@@ -359,16 +359,31 @@ with st.form("upload_training_deal"):
                     pdf_hash = calculate_pdf_hash(pdf_path)
                     account_number, account_status = extract_account_number_from_pdf(pdf_path)
                     
-                    # Save PDF record
-                    pdf_file = PDFFile(
-                        deal_id=training_deal.id,
-                        file_path=pdf_path,
-                        file_hash=pdf_hash,
-                        account_number=account_number,
-                        account_status=account_status,
-                        created_at=datetime.utcnow()
-                    )
-                    db.add(pdf_file)
+                    # Check if PDF with same hash already exists
+                    existing_pdf = db.query(PDFFile).filter(PDFFile.file_hash == pdf_hash).first()
+                    
+                    if existing_pdf:
+                        # PDF already processed before - update to link to this training deal
+                        pdf_file = PDFFile(
+                            deal_id=training_deal.id,
+                            file_path=pdf_path,
+                            file_hash=pdf_hash + f"_training_{training_deal.id}",  # Make unique for training
+                            account_number=account_number,
+                            account_status=account_status,
+                            created_at=datetime.utcnow()
+                        )
+                        db.add(pdf_file)
+                    else:
+                        # New PDF - save with original hash
+                        pdf_file = PDFFile(
+                            deal_id=training_deal.id,
+                            file_path=pdf_path,
+                            file_hash=pdf_hash,
+                            account_number=account_number,
+                            account_status=account_status,
+                            created_at=datetime.utcnow()
+                        )
+                        db.add(pdf_file)
                     
                     # Extract data (blind run)
                     extracted_data, reasoning_log, retry_count, final_status = auto_retry_extraction_with_verification(
