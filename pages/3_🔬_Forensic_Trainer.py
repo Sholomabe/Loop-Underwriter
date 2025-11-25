@@ -76,13 +76,18 @@ if truth_input_method == "📊 Upload Excel File":
             
             st.success("✅ Excel file parsed successfully!")
             
-            # Show parse log in expander
-            with st.expander("🔍 Parse Log (Debug Info)", expanded=False):
-                for log_entry in extracted_data.get('parse_log', []):
-                    st.text(log_entry)
+            # Show parse log PROMINENTLY for debugging
+            st.markdown("### 🔍 Parse Log (What the parser found)")
+            for log_entry in extracted_data.get('parse_log', []):
+                if 'ERROR' in log_entry or 'Could not find' in log_entry:
+                    st.error(log_entry)
+                elif 'Found' in log_entry:
+                    st.success(log_entry)
+                else:
+                    st.info(log_entry)
             
             # Show raw preview
-            with st.expander("📊 Raw Excel Preview (First 30 Rows)", expanded=False):
+            with st.expander("📊 Raw Excel Preview (First 30 Rows)", expanded=True):
                 st.text(extracted_data.get('raw_preview', 'No preview available'))
             
             # Display all extracted data in organized sections
