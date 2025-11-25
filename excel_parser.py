@@ -171,18 +171,19 @@ def parse_info_needed_section(df: pd.DataFrame, log: List[str]) -> Dict[str, Any
     
     # Define search patterns for each field
     # Format: field_name -> (patterns, column_offset) 
-    # column_offset specifies which adjacent column to read (1 = first value, 2 = second value)
+    # column_offset specifies which adjacent column to read
+    # User confirmed: data is 3 columns to the right of the label
     field_patterns = {
-        'total_monthly_payments': (['total monthly payments', 'total monthly payment'], 1),
-        'diesel_total_monthly_payments': (["diesel's total monthly payments", "diesel total monthly", "diesel's total"], 1),
-        'total_monthly_payments_with_diesel': (['total monthly payments (including diesel', 'including diesel'], 1),
-        'average_monthly_income': (['average monthly income', 'avg monthly income'], 1),
-        'annual_income': (['annual income'], 1),
-        'length_of_deal_months': (['length of deal', 'deal length'], 1),
-        'holdback_percentage': (['holdback percentage', 'holdback %', 'holdback percentage / monthly holdback'], 1),
-        'monthly_holdback': (['holdback percentage / monthly holdback'], 2),  # Second value after the combined label
-        'monthly_payment_to_income_pct': (['monthly payment to monthly income', 'payment to income'], 1),
-        'original_balance_to_annual_income_pct': (['original balance to annual income', 'balance to annual'], 1),
+        'total_monthly_payments': (['total monthly payments', 'total monthly payment'], 3),
+        'diesel_total_monthly_payments': (["diesel's total monthly payments", "diesel total monthly", "diesel's total"], 3),
+        'total_monthly_payments_with_diesel': (['total monthly payments (including diesel', 'including diesel'], 3),
+        'average_monthly_income': (['average monthly income', 'avg monthly income'], 3),
+        'annual_income': (['annual income'], 3),
+        'length_of_deal_months': (['length of deal', 'deal length'], 3),
+        'holdback_percentage': (['holdback percentage', 'holdback %', 'holdback percentage / monthly holdback'], 3),
+        'monthly_holdback': (['holdback percentage / monthly holdback'], 4),  # Second value (4th column from label)
+        'monthly_payment_to_income_pct': (['monthly payment to monthly income', 'payment to income'], 3),
+        'original_balance_to_annual_income_pct': (['original balance to annual income', 'balance to annual'], 3),
     }
     
     for field_name, (patterns, col_offset) in field_patterns.items():
@@ -211,7 +212,13 @@ def parse_info_needed_section(df: pd.DataFrame, log: List[str]) -> Dict[str, Any
 
 
 def parse_daily_positions(df: pd.DataFrame, log: List[str]) -> List[Dict[str, Any]]:
-    """Parse the Daily Positions section."""
+    """Parse the Daily Positions section.
+    
+    Layout (user confirmed):
+    Row 9:  Daily Positions | Name | Amount | Monthly Payment  (headers on SAME row)
+    Row 10: Position 1      | John | 1000   | 500
+    Row 11: Position 2      | Jane | 2000   | 600
+    """
     positions = []
     
     # Find "Daily Positions" header
@@ -220,29 +227,16 @@ def parse_daily_positions(df: pd.DataFrame, log: List[str]) -> List[Dict[str, An
         log.append("Could not find 'Daily Positions' section")
         return positions
     
-    start_row, start_col = location
-    log.append(f"Found 'Daily Positions' at row {start_row+1}, col {start_col+1}")
+    header_row, start_col = location
+    log.append(f"Found 'Daily Positions' at row {header_row+1}, col {start_col+1}")
     
-    # Find the header row with Name, Amount, Monthly Payment
-    header_row = None
-    for row_offset in range(1, 5):
-        if start_row + row_offset < len(df):
-            row_values = [str(df.iloc[start_row + row_offset, c]).lower() if pd.notna(df.iloc[start_row + row_offset, c]) else '' 
-                         for c in range(len(df.columns))]
-            if any('name' in val for val in row_values):
-                header_row = start_row + row_offset
-                break
-    
-    if header_row is None:
-        log.append("Could not find Daily Positions header row")
-        return positions
-    
-    # Find column indices for Name, Amount, Monthly Payment
+    # Headers are on the SAME row as "Daily Positions", to the right
+    # Find column indices for Name, Amount, Monthly Payment on this row
     name_col = None
     amount_col = None
     payment_col = None
     
-    for col_idx in range(len(df.columns)):
+    for col_idx in range(start_col + 1, len(df.columns)):
         cell = str(df.iloc[header_row, col_idx]).lower() if pd.notna(df.iloc[header_row, col_idx]) else ''
         if 'name' in cell and name_col is None:
             name_col = col_idx
@@ -252,12 +246,12 @@ def parse_daily_positions(df: pd.DataFrame, log: List[str]) -> List[Dict[str, An
             payment_col = col_idx
     
     if name_col is None:
-        log.append("Could not find 'Name' column in Daily Positions")
+        log.append("Could not find 'Name' column in Daily Positions row")
         return positions
     
-    log.append(f"Daily Positions columns - Name: {name_col}, Amount: {amount_col}, Payment: {payment_col}")
+    log.append(f"Daily Positions columns (row {header_row+1}) - Name: col {name_col+1}, Amount: col {amount_col+1 if amount_col else 'N/A'}, Payment: col {payment_col+1 if payment_col else 'N/A'}")
     
-    # Read position rows until we hit an empty name or a new section
+    # Read position rows - data starts on the row BELOW the header
     data_row = header_row + 1
     while data_row < len(df):
         name_value = df.iloc[data_row, name_col] if name_col is not None else None
@@ -266,7 +260,9 @@ def parse_daily_positions(df: pd.DataFrame, log: List[str]) -> List[Dict[str, An
         is_na = bool(pd.isna(name_value)) if not isinstance(pd.isna(name_value), bool) else pd.isna(name_value)
         if is_na or str(name_value).strip() == '':
             break
-        if any(term in str(name_value).lower() for term in ['bank account', 'total', 'monthly revenue']):
+        # Stop if we hit another section
+        first_col_value = str(df.iloc[data_row, start_col]).lower() if pd.notna(df.iloc[data_row, start_col]) else ''
+        if any(term in first_col_value for term in ['weekly positions', 'bank account', 'total revenues']):
             break
         
         position = {
@@ -284,7 +280,15 @@ def parse_daily_positions(df: pd.DataFrame, log: List[str]) -> List[Dict[str, An
 
 
 def parse_bank_accounts(df: pd.DataFrame, log: List[str]) -> Dict[str, Any]:
-    """Parse Bank Account data for multiple accounts."""
+    """Parse Bank Account data for multiple accounts.
+    
+    Layout (user confirmed):
+    Row 33: Bank Account 1 (spans cols 2-5)
+    Row 34: Monthly Revenue | Total Income | Deductions | Net Revenue  (headers)
+    Row 35: Month 1         | $310,682     | $78,650    | $232,032
+    Row 36: Month 2         | $291,796     | $34,100    | $257,696
+    ...
+    """
     bank_accounts = {}
     
     # Find all "Bank Account X" headers
@@ -303,60 +307,60 @@ def parse_bank_accounts(df: pd.DataFrame, log: List[str]) -> Dict[str, Any]:
     for row_idx, col_idx, account_name in account_locations:
         log.append(f"Processing: {account_name} at row {row_idx+1}, col {col_idx+1}")
         
-        # Find the header row with Month, Total Income, Deductions, Net Revenue
-        # Usually it's 1-2 rows below the account name
-        header_row = None
-        for offset in range(0, 3):
-            check_row = row_idx + offset
-            if check_row < len(df):
-                row_text = ' '.join([str(df.iloc[check_row, c]).lower() for c in range(len(df.columns)) if pd.notna(df.iloc[check_row, c])])
-                if 'total income' in row_text or 'monthly revenue' in row_text:
-                    header_row = check_row
-                    break
-        
-        if header_row is None:
-            log.append(f"  Could not find header row for {account_name}")
+        # Header row is 1 row below "Bank Account X"
+        header_row = row_idx + 1
+        if header_row >= len(df):
+            log.append(f"  Header row out of bounds for {account_name}")
             continue
         
-        # Find column indices - they should be near the account header column
+        # Log what's in the header row for debugging
+        header_contents = []
+        for c in range(col_idx, min(col_idx + 6, len(df.columns))):
+            val = df.iloc[header_row, c] if pd.notna(df.iloc[header_row, c]) else ''
+            header_contents.append(f"col{c+1}='{val}'")
+        log.append(f"  Header row {header_row+1} contents: {', '.join(header_contents)}")
+        
+        # Find column indices starting from the account column
         month_col = None
         income_col = None
         deductions_col = None
         net_revenue_col = None
         
-        # Search in nearby columns (within 5 columns of the account header)
-        search_start = max(0, col_idx - 1)
-        search_end = min(len(df.columns), col_idx + 6)
-        
-        for c in range(search_start, search_end):
+        for c in range(col_idx, min(col_idx + 8, len(df.columns))):
             cell = str(df.iloc[header_row, c]).lower() if pd.notna(df.iloc[header_row, c]) else ''
-            if 'monthly revenue' in cell or 'month' in cell:
+            if ('monthly revenue' in cell or cell == 'month' or 'month' in cell) and month_col is None:
                 month_col = c
-            elif 'total income' in cell:
+            elif 'total income' in cell and income_col is None:
                 income_col = c
-            elif 'deduction' in cell:
+            elif 'deduction' in cell and deductions_col is None:
                 deductions_col = c
-            elif 'net revenue' in cell:
+            elif 'net revenue' in cell and net_revenue_col is None:
                 net_revenue_col = c
         
-        log.append(f"  Columns - Month: {month_col}, Income: {income_col}, Deductions: {deductions_col}, Net: {net_revenue_col}")
+        log.append(f"  Found columns - Month: col {month_col+1 if month_col is not None else 'N/A'}, Income: col {income_col+1 if income_col is not None else 'N/A'}, Deductions: col {deductions_col+1 if deductions_col is not None else 'N/A'}, Net: col {net_revenue_col+1 if net_revenue_col is not None else 'N/A'}")
         
         # Read month rows (Month 1 through Month 12)
         months_data = []
         data_row = header_row + 1
         
         while data_row < len(df) and len(months_data) < 12:
-            # Check if this row has month data
-            month_cell = df.iloc[data_row, month_col] if month_col is not None else None
+            # Check first column value to detect section end
+            first_col_val = str(df.iloc[data_row, col_idx]).lower() if pd.notna(df.iloc[data_row, col_idx]) else ''
+            if 'bank account' in first_col_val or 'total revenues' in first_col_val or 'weekly' in first_col_val:
+                break
             
+            # Get month cell
+            month_cell = df.iloc[data_row, month_col] if month_col is not None else None
             is_month_na = bool(pd.isna(month_cell)) if not isinstance(pd.isna(month_cell), bool) else pd.isna(month_cell)
-            if is_month_na:
+            
+            if is_month_na or str(month_cell).strip() == '':
                 data_row += 1
                 continue
             
             month_str = str(month_cell).strip()
             if not month_str.lower().startswith('month'):
-                break
+                data_row += 1
+                continue
             
             month_entry = {
                 'month': month_str,
@@ -365,6 +369,7 @@ def parse_bank_accounts(df: pd.DataFrame, log: List[str]) -> Dict[str, Any]:
                 'net_revenue': parse_numeric(df.iloc[data_row, net_revenue_col]) if net_revenue_col is not None else 0.0
             }
             months_data.append(month_entry)
+            log.append(f"    {month_str}: Income=${month_entry['total_income']:,.2f}, Ded=${month_entry['deductions']:,.2f}, Net=${month_entry['net_revenue']:,.2f}")
             
             data_row += 1
         
