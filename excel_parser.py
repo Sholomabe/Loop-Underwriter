@@ -261,7 +261,8 @@ def parse_daily_positions(df: pd.DataFrame, log: List[str]) -> List[Dict[str, An
         name_value = df.iloc[data_row, name_col] if name_col is not None else None
         
         # Stop if name is empty or we hit a new section
-        if pd.isna(name_value) or str(name_value).strip() == '':
+        is_na = bool(pd.isna(name_value)) if not isinstance(pd.isna(name_value), bool) else pd.isna(name_value)
+        if is_na or str(name_value).strip() == '':
             break
         if any(term in str(name_value).lower() for term in ['bank account', 'total', 'monthly revenue']):
             break
@@ -346,7 +347,8 @@ def parse_bank_accounts(df: pd.DataFrame, log: List[str]) -> Dict[str, Any]:
             # Check if this row has month data
             month_cell = df.iloc[data_row, month_col] if month_col is not None else None
             
-            if pd.isna(month_cell):
+            is_month_na = bool(pd.isna(month_cell)) if not isinstance(pd.isna(month_cell), bool) else pd.isna(month_cell)
+            if is_month_na:
                 data_row += 1
                 continue
             

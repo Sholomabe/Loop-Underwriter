@@ -5,6 +5,7 @@ from database import get_db
 from models import Deal, PDFFile, Transaction, TrainingExample, GoldStandardRule
 from datetime import datetime
 from openai_integration import adversarial_correction_prompt
+from excel_parser import parse_underwriting_excel, format_extracted_data_for_display
 
 st.set_page_config(page_title="Forensic Trainer", page_icon="🔬", layout="wide")
 
@@ -50,128 +51,174 @@ if 'truth_diesel' not in st.session_state:
 if 'truth_nsf' not in st.session_state:
     st.session_state.truth_nsf = 0
 
+# Initialize session state for full extracted data
+if 'extracted_excel_data' not in st.session_state:
+    st.session_state.extracted_excel_data = None
+
 # Excel upload section OR manual entry preview (outside form for immediate feedback)
 excel_file = None
 if truth_input_method == "📊 Upload Excel File":
-    st.markdown("Upload an Excel file with the **correct** values (Annual Income, Monthly Income, etc.)")
+    st.markdown("Upload an Excel file with the **underwriting** sheet containing truth values")
+    st.info("📖 The parser will look for sheet named 'underwriting' (or use the second sheet)")
     
     excel_file = st.file_uploader(
         "Upload Truth Values Excel",
         type=['xlsx', 'xls'],
-        help="Excel should have columns: Annual Income, Monthly Income, Revenues, Monthly Payments, Diesel Payments, NSF Count",
+        help="Excel should have an 'underwriting' sheet with: Info Needed section, Daily Positions, Bank Account data, and Total Revenues",
         key='excel_uploader'
     )
     
     if excel_file:
         try:
-            import pandas as pd
-            import numpy as np
+            # Use the comprehensive parser
+            extracted_data = parse_underwriting_excel(excel_file)
+            st.session_state.extracted_excel_data = extracted_data
             
-            # Read Excel file without headers (treat as grid of cells)
-            df_raw = pd.read_excel(excel_file, header=None)
+            st.success("✅ Excel file parsed successfully!")
             
-            st.success(f"✅ Excel file loaded! Found {len(df_raw)} rows and {len(df_raw.columns)} columns.")
+            # Show parse log in expander
+            with st.expander("🔍 Parse Log (Debug Info)", expanded=False):
+                for log_entry in extracted_data.get('parse_log', []):
+                    st.text(log_entry)
             
-            # Display preview
-            with st.expander("📊 Preview Raw Excel Data"):
-                st.dataframe(df_raw.head(20), use_container_width=True)
+            # Show raw preview
+            with st.expander("📊 Raw Excel Preview (First 30 Rows)", expanded=False):
+                st.text(extracted_data.get('raw_preview', 'No preview available'))
             
-            # Function to search for a label and get the value to its right
-            def find_value_by_label(df, label_keywords, offset_col=1, offset_row=0):
-                """Search for label keywords and return the value offset from it"""
-                for row_idx in range(len(df)):
-                    for col_idx in range(len(df.columns)):
-                        cell_value = df.iloc[row_idx, col_idx]
-                        if pd.notna(cell_value) and isinstance(cell_value, str):
-                            cell_lower = str(cell_value).lower()
-                            # Check if any keyword matches
-                            for keyword in label_keywords:
-                                if keyword.lower() in cell_lower:
-                                    # Found the label, get the value at offset
-                                    try:
-                                        value_col = col_idx + offset_col
-                                        value_row = row_idx + offset_row
-                                        if value_col < len(df.columns) and value_row < len(df):
-                                            value = df.iloc[value_row, value_col]
-                                            if pd.notna(value):
-                                                # Try to convert to float
-                                                try:
-                                                    return float(str(value).replace('$', '').replace(',', '').replace('%', ''))
-                                                except:
-                                                    return 0
-                                    except:
-                                        pass
-                return 0
+            # Display all extracted data in organized sections
+            st.markdown("---")
+            st.subheader("📋 Extracted Data from 'underwriting' Sheet")
             
-            st.write("**🔄 Searching for values in spreadsheet...**")
+            # INFO NEEDED SECTION
+            info = extracted_data.get('info_needed', {})
+            st.markdown("### 📝 Info Needed Section")
+            col1, col2, col3 = st.columns(3)
             
-            # Search for each value
-            st.write("*Looking for Annual Income...*")
-            annual_income = find_value_by_label(df_raw, ['annual income', 'original balance to annual income'], offset_col=1)
-            if annual_income == 0:
-                # Try percentage-based calculation if we find "Original balance to Annual Income (As a percentage)"
-                # This might be a percentage, so we'll skip for now
-                st.write(f"⚠️ Could not find Annual Income directly")
+            with col1:
+                st.metric("Total Monthly Payments", f"${info.get('total_monthly_payments', 0):,.2f}")
+                st.metric("Average Monthly Income", f"${info.get('average_monthly_income', 0):,.2f}")
+                st.metric("Annual Income", f"${info.get('annual_income', 0):,.2f}")
+            
+            with col2:
+                st.metric("Diesel's Total Monthly Payments", f"${info.get('diesel_total_monthly_payments', 0):,.2f}")
+                st.metric("Total w/ Diesel's New Deal", f"${info.get('total_monthly_payments_with_diesel', 0):,.2f}")
+                st.metric("Length of Deal (months)", f"{info.get('length_of_deal_months', 0)}")
+            
+            with col3:
+                st.metric("Holdback Percentage", f"{info.get('holdback_percentage', 0):.2f}%")
+                st.metric("Monthly Holdback", f"${info.get('monthly_holdback', 0):,.2f}")
+                st.metric("Payment to Income %", f"{info.get('monthly_payment_to_income_pct', 0):.2f}%")
+            
+            st.metric("Original Balance to Annual Income %", f"{info.get('original_balance_to_annual_income_pct', 0):.2f}%")
+            
+            # DAILY POSITIONS SECTION
+            st.markdown("### 📊 Daily Positions")
+            positions = extracted_data.get('daily_positions', [])
+            if positions:
+                import pandas as pd
+                pos_df = pd.DataFrame(positions)
+                pos_df.columns = ['Name', 'Amount', 'Monthly Payment']
+                pos_df['Amount'] = pos_df['Amount'].apply(lambda x: f"${x:,.2f}")
+                pos_df['Monthly Payment'] = pos_df['Monthly Payment'].apply(lambda x: f"${x:,.2f}")
+                st.dataframe(pos_df, use_container_width=True, hide_index=True)
             else:
-                st.write(f"✅ Found: ${annual_income:,.2f}")
-            st.session_state.truth_annual_income = annual_income
+                st.info("No Daily Positions found in the spreadsheet")
             
-            st.write("*Looking for Average Monthly Income...*")
-            monthly_income = find_value_by_label(df_raw, ['average monthly income', 'avg monthly income'], offset_col=1)
-            st.write(f"✅ Found: ${monthly_income:,.2f}")
-            st.session_state.truth_monthly_income = monthly_income
+            # BANK ACCOUNTS SECTION
+            st.markdown("### 🏦 Bank Account Data")
+            bank_accounts = extracted_data.get('bank_accounts', {})
+            if bank_accounts:
+                # Create tabs for each bank account
+                account_names = list(bank_accounts.keys())
+                if account_names:
+                    tabs = st.tabs(account_names)
+                    for idx, account_name in enumerate(account_names):
+                        with tabs[idx]:
+                            account_data = bank_accounts[account_name]
+                            months_data = account_data.get('months', [])
+                            if months_data:
+                                import pandas as pd
+                                months_df = pd.DataFrame(months_data)
+                                months_df.columns = ['Month', 'Total Income', 'Deductions', 'Net Revenue']
+                                months_df['Total Income'] = months_df['Total Income'].apply(lambda x: f"${x:,.2f}")
+                                months_df['Deductions'] = months_df['Deductions'].apply(lambda x: f"${x:,.2f}")
+                                months_df['Net Revenue'] = months_df['Net Revenue'].apply(lambda x: f"${x:,.2f}")
+                                st.dataframe(months_df, use_container_width=True, hide_index=True)
+                            else:
+                                st.info(f"No monthly data found for {account_name}")
+            else:
+                st.info("No Bank Account data found in the spreadsheet")
             
-            st.write("*Looking for Total Revenues (last 4 months)...*")
-            revenues = find_value_by_label(df_raw, ['total last four monthly payments', 'last four monthly'], offset_col=1)
-            st.write(f"✅ Found: ${revenues:,.2f}")
-            st.session_state.truth_revenues = revenues
+            # TOTAL REVENUES SECTION
+            st.markdown("### 📈 Total Revenues by Month")
+            revenues = extracted_data.get('total_revenues_by_month', {})
+            if revenues:
+                import pandas as pd
+                rev_df = pd.DataFrame(list(revenues.items()), columns=['Month', 'Total Revenue'])
+                rev_df['Total Revenue'] = rev_df['Total Revenue'].apply(lambda x: f"${x:,.2f}")
+                st.dataframe(rev_df, use_container_width=True, hide_index=True)
+            else:
+                # Calculate from bank accounts if available
+                if bank_accounts:
+                    st.info("Total Revenues calculated from Bank Account Net Revenues:")
+                    total_by_month = {}
+                    for account_name, account_data in bank_accounts.items():
+                        for month_entry in account_data.get('months', []):
+                            month = month_entry['month']
+                            if month not in total_by_month:
+                                total_by_month[month] = 0
+                            total_by_month[month] += month_entry['net_revenue']
+                    if total_by_month:
+                        import pandas as pd
+                        rev_df = pd.DataFrame(list(total_by_month.items()), columns=['Month', 'Total Net Revenue'])
+                        rev_df['Total Net Revenue'] = rev_df['Total Net Revenue'].apply(lambda x: f"${x:,.2f}")
+                        st.dataframe(rev_df, use_container_width=True, hide_index=True)
+                else:
+                    st.info("No Total Revenues data found")
             
-            st.write("*Looking for Total Monthly Payments...*")
-            payments = find_value_by_label(df_raw, ['total monthly payments'], offset_col=1)
-            st.write(f"✅ Found: ${payments:,.2f}")
-            st.session_state.truth_payments = payments
+            # Update session state with key values for the form
+            st.session_state.truth_annual_income = info.get('annual_income', 0)
+            st.session_state.truth_monthly_income = info.get('average_monthly_income', 0)
+            st.session_state.truth_payments = info.get('total_monthly_payments', 0)
+            st.session_state.truth_diesel = info.get('diesel_total_monthly_payments', 0)
             
-            st.write("*Looking for Diesel Payments...*")
-            diesel = find_value_by_label(df_raw, ['diesel fuel payment', 'diesel payment'], offset_col=1)
-            st.write(f"✅ Found: ${diesel:,.2f}")
-            st.session_state.truth_diesel = diesel
+            # Calculate total revenues from bank accounts for the last 4 months
+            total_revenue_4m = 0
+            if bank_accounts:
+                for account_data in bank_accounts.values():
+                    months_data = account_data.get('months', [])
+                    # Take last 4 months with data
+                    for month_entry in months_data[-4:]:
+                        total_revenue_4m += month_entry.get('net_revenue', 0)
+            st.session_state.truth_revenues = total_revenue_4m
+            st.session_state.truth_nsf = 0  # Not in this format
             
-            st.write("*Looking for NSF Count...*")
-            # NSF might not be in this format, default to 0
-            nsf = 0
-            st.write(f"ℹ️ NSF Count not found in this format, defaulting to {nsf}")
-            st.session_state.truth_nsf = nsf
-            
-            st.info(f"""
-            **Extracted Values (Saved to Session):**
+            st.markdown("---")
+            st.success(f"""
+            **Key Values Saved for Training:**
             - Annual Income: ${st.session_state.truth_annual_income:,.2f}
-            - Monthly Income: ${st.session_state.truth_monthly_income:,.2f}
-            - Revenues (4M): ${st.session_state.truth_revenues:,.2f}
-            - Monthly Payments: ${st.session_state.truth_payments:,.2f}
-            - Diesel Payments: ${st.session_state.truth_diesel:,.2f}
-            - NSF Count: {st.session_state.truth_nsf}
+            - Avg Monthly Income: ${st.session_state.truth_monthly_income:,.2f}
+            - Total Monthly Payments: ${st.session_state.truth_payments:,.2f}
+            - Diesel's Total Payments: ${st.session_state.truth_diesel:,.2f}
+            - Revenues (Last 4M Net): ${st.session_state.truth_revenues:,.2f}
             """)
+            
         except Exception as e:
-            st.error(f"❌ Error reading Excel file: {str(e)}")
-            st.info("Please make sure the Excel file has the correct column names.")
+            st.error(f"❌ Error parsing Excel file: {str(e)}")
+            import traceback
+            with st.expander("🔍 Error Details"):
+                st.code(traceback.format_exc())
     
-    # Show current saved values
-    if excel_file is None and any([
-        st.session_state.truth_annual_income > 0,
-        st.session_state.truth_monthly_income > 0,
-        st.session_state.truth_revenues > 0,
-        st.session_state.truth_payments > 0,
-        st.session_state.truth_diesel > 0,
-        st.session_state.truth_nsf > 0
-    ]):
-        st.success(f"""
-        **Using Previously Loaded Excel Values:**
+    # Show current saved values if no new file uploaded
+    if excel_file is None and st.session_state.extracted_excel_data is not None:
+        st.success("📂 Using previously loaded Excel data (upload a new file to replace)")
+        info = st.session_state.extracted_excel_data.get('info_needed', {})
+        st.info(f"""
+        **Previously Loaded Key Values:**
         - Annual Income: ${st.session_state.truth_annual_income:,.2f}
-        - Monthly Income: ${st.session_state.truth_monthly_income:,.2f}
-        - Revenues (4M): ${st.session_state.truth_revenues:,.2f}
-        - Monthly Payments: ${st.session_state.truth_payments:,.2f}
-        - Diesel Payments: ${st.session_state.truth_diesel:,.2f}
-        - NSF Count: {st.session_state.truth_nsf}
+        - Avg Monthly Income: ${st.session_state.truth_monthly_income:,.2f}
+        - Total Monthly Payments: ${st.session_state.truth_payments:,.2f}
+        - Diesel's Total Payments: ${st.session_state.truth_diesel:,.2f}
         """)
 else:
     # Manual entry mode - show instructions
