@@ -456,9 +456,35 @@ def parse_monthly_positions_non_mca(df: pd.DataFrame, log: List[str]) -> List[Di
     Column 5 = Monthly Payment
     """
     positions = []
+    log.append("--- MONTHLY POSITIONS (NON MCA) PARSING ---")
     
-    # Find "Monthly Positions" header (non MCA)
-    location = find_cell_location(df, ['monthly positions'])
+    # Debug: Show what's in row 26 (0-indexed: 25) to help find the section
+    if len(df) > 25:
+        row26_preview = []
+        for c in range(min(8, len(df.columns))):
+            val = df.iloc[25, c] if pd.notna(df.iloc[25, c]) else ''
+            row26_preview.append(f"col{c+1}='{val}'")
+        log.append(f"Row 26 preview: {', '.join(row26_preview)}")
+    
+    # Try multiple search terms
+    search_terms = ['monthly positions', 'monthly (non', 'non mca', 'monthly pos']
+    location = None
+    for term in search_terms:
+        location = find_cell_location(df, [term])
+        if location:
+            log.append(f"Found section using search term: '{term}'")
+            break
+    
+    # Fallback: Check fixed row 26, col 2 (0-indexed: row 25, col 1)
+    if not location and len(df) > 25 and len(df.columns) > 1:
+        cell_val = df.iloc[25, 1]  # Row 26, Col 2
+        if pd.notna(cell_val):
+            cell_str = str(cell_val).strip().lower()
+            log.append(f"Checking fixed location row 26, col 2: '{cell_val}'")
+            if 'monthly' in cell_str or 'position' in cell_str or 'non' in cell_str:
+                location = (25, 1)
+                log.append(f"Using fixed location row 26, col 2")
+    
     if not location:
         log.append("Could not find 'Monthly Positions (non MCA)' section")
         return positions
