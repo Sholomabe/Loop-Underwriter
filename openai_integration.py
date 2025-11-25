@@ -41,58 +41,129 @@ def extract_financial_data_from_pdf(
     from pdf_processor import extract_text_from_pdf
     pdf_text = extract_text_from_pdf(pdf_path)
     
-    # Build prompt
-    system_prompt = """You are an expert financial data extractor specializing in bank statements.
-Extract the following metrics with high precision:
-- Total Monthly Payments
-- Diesel Payments
-- Average Monthly Income
-- Annual Income
-- Revenues (Last 4 Months)
-- NSF Count (Non-Sufficient Funds)
+    # Build comprehensive prompt matching truth Excel structure
+    system_prompt = """You are an expert financial data extractor specializing in bank statements for MCA (Merchant Cash Advance) underwriting.
+
+Extract ALL of the following data with high precision:
+
+## 1. INFO NEEDED METRICS (Core underwriting data)
+- Total Monthly Payments: Sum of all recurring payment obligations
+- Diesel Total Monthly Payments: Sum of diesel/fuel-related payments only
+- Total Monthly Payments with Diesel: Total payments including diesel
+- Average Monthly Income: Average of monthly income/deposits
+- Annual Income: Projected or actual annual income
+- Length of Deal (Months): Duration of the MCA deal
+- Holdback Percentage: The percentage being held back (e.g., 10%)
+- Monthly Holdback: Dollar amount of monthly holdback
+- Monthly Payment to Income %: Payment as percentage of monthly income
+- Original Balance to Annual Income %: Original loan balance as % of annual income
+
+## 2. DAILY POSITIONS (Daily payment MCA positions)
+List each daily position with:
+- Name: Lender/Company name
+- Amount: Original balance/amount
+- Monthly Payment: Monthly payment amount
+
+## 3. WEEKLY POSITIONS (Weekly payment MCA positions)
+List each weekly position with:
+- Name: Lender/Company name
+- Amount: Original balance/amount
+- Monthly Payment: Equivalent monthly payment
+
+## 4. MONTHLY POSITIONS (Non-MCA monthly obligations)
+List each monthly position with:
+- Name: Creditor/Lender name
+- Monthly Payment: Monthly payment amount
+
+## 5. BANK ACCOUNT DATA (Per-account monthly breakdown)
+For each bank account identified, extract per-month data:
+- Account Name/Number
+- For each month: Total Income, Deductions, Net Revenue
+
+## 6. TOTAL REVENUES BY MONTH
+Monthly revenue totals across all accounts
+
+## 7. DEDUCTIONS
+Monthly deduction amounts per account
+
+## 8. TRANSACTIONS (Individual transactions for verification)
+List key transactions with date, description, amount, type, and category
 
 CRITICAL INSTRUCTIONS:
-1. Provide detailed transaction-level data, not just totals
-2. Show your mathematical reasoning for each calculated total
-3. List individual transactions that contribute to each category
-4. If you exclude any transaction, explain why in detail
-5. Verify that the sum of individual transactions matches your stated total
+1. Extract ALL data fields - do not skip any section
+2. All amounts must be NUMBERS (no $ symbols or commas in values)
+3. Percentages should be NUMBERS (e.g., 10 not "10%")
+4. Show your mathematical reasoning
+5. If data is not present, use 0 or empty array
+6. Verify sums match your calculations
 
-Output format must be JSON with this structure:
+Output format must be JSON with this EXACT structure:
 {
-  "total_monthly_payments": <number>,
-  "diesel_payments": <number>,
-  "avg_monthly_income": <number>,
-  "annual_income": <number>,
-  "revenues_last_4_months": <number>,
-  "nsf_count": <number>,
+  "info_needed": {
+    "total_monthly_payments": <number>,
+    "diesel_total_monthly_payments": <number>,
+    "total_monthly_payments_with_diesel": <number>,
+    "average_monthly_income": <number>,
+    "annual_income": <number>,
+    "length_of_deal_months": <number>,
+    "holdback_percentage": <number>,
+    "monthly_holdback": <number>,
+    "monthly_payment_to_income_pct": <number>,
+    "original_balance_to_annual_income_pct": <number>
+  },
+  "daily_positions": [
+    {"name": "<lender name>", "amount": <number>, "monthly_payment": <number>}
+  ],
+  "weekly_positions": [
+    {"name": "<lender name>", "amount": <number>, "monthly_payment": <number>}
+  ],
+  "monthly_positions_non_mca": [
+    {"name": "<creditor name>", "monthly_payment": <number>}
+  ],
+  "bank_accounts": {
+    "<account_name>": {
+      "months": [
+        {"month": "<month name>", "total_income": <number>, "deductions": <number>, "net_revenue": <number>}
+      ]
+    }
+  },
+  "total_revenues_by_month": {
+    "<month name>": <number>
+  },
+  "deductions": {
+    "<account_name>": {
+      "<month name>": <number>
+    }
+  },
   "transactions": [
     {
       "date": "YYYY-MM-DD",
-      "description": "...",
+      "description": "<description>",
       "amount": <number>,
       "type": "debit|credit",
-      "category": "income|diesel|payment|other"
+      "category": "income|diesel|payment|transfer|other"
     }
   ],
-  "reasoning": "Detailed explanation of your calculations and any exclusions"
+  "nsf_count": <number>,
+  "reasoning": "<detailed explanation of your calculations and any exclusions>"
 }"""
     
     if error_feedback:
-        system_prompt += f"\n\nPREVIOUS ATTEMPT HAD AN ERROR:\n{error_feedback}\n\nPlease re-scan the document carefully, find the missing transactions or correct your calculations."
+        system_prompt += f"\n\nPREVIOUS ATTEMPT HAD AN ERROR:\n{error_feedback}\n\nPlease re-scan the document carefully, find the missing data or correct your calculations."
     
-    user_prompt = f"""Analyze this bank statement and extract financial data.
+    user_prompt = f"""Analyze this bank statement and extract ALL financial data for MCA underwriting.
 
 Account ID: {account_id or 'Unknown'}
 
 Bank Statement Text:
-{pdf_text[:8000]}  
+{pdf_text[:12000]}  
 
 Remember:
-1. List ALL transactions individually
-2. Show your math for totals
-3. Explain any exclusions
-4. Verify sums match"""
+1. Extract ALL sections (info_needed, positions, bank accounts, revenues, deductions, transactions)
+2. All values must be numbers (no currency symbols or percentage signs)
+3. Show your math for calculated totals
+4. Explain any exclusions or assumptions
+5. Verify sums match"""
     
     try:
         # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
@@ -118,13 +189,26 @@ Remember:
         print(f"Error in OpenAI Vision extraction: {e}")
         return {
             "error": str(e),
-            "total_monthly_payments": 0,
-            "diesel_payments": 0,
-            "avg_monthly_income": 0,
-            "annual_income": 0,
-            "revenues_last_4_months": 0,
-            "nsf_count": 0,
-            "transactions": []
+            "info_needed": {
+                "total_monthly_payments": 0,
+                "diesel_total_monthly_payments": 0,
+                "total_monthly_payments_with_diesel": 0,
+                "average_monthly_income": 0,
+                "annual_income": 0,
+                "length_of_deal_months": 0,
+                "holdback_percentage": 0,
+                "monthly_holdback": 0,
+                "monthly_payment_to_income_pct": 0,
+                "original_balance_to_annual_income_pct": 0
+            },
+            "daily_positions": [],
+            "weekly_positions": [],
+            "monthly_positions_non_mca": [],
+            "bank_accounts": {},
+            "total_revenues_by_month": {},
+            "deductions": {},
+            "transactions": [],
+            "nsf_count": 0
         }, f"Error: {str(e)}"
 
 def generate_underwriting_summary(
