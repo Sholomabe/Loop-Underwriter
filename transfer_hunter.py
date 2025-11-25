@@ -22,6 +22,30 @@ def safe_float(value, default=0.0) -> float:
     return default
 
 
+def sanitize_transactions(transactions: list) -> List[Dict]:
+    """
+    Filter and sanitize a transactions list to ensure all elements are dictionaries.
+    
+    This handles cases where the AI returns malformed data like integers
+    or other non-dict types in the transactions array.
+    
+    Args:
+        transactions: Raw transactions list (may contain non-dict elements)
+        
+    Returns:
+        List of only valid transaction dictionaries
+    """
+    if not transactions:
+        return []
+    
+    valid_transactions = []
+    for txn in transactions:
+        if isinstance(txn, dict):
+            valid_transactions.append(txn)
+    
+    return valid_transactions
+
+
 # Known lender keywords for debt identification
 KNOWN_LENDER_KEYWORDS = [
     "financing", "capital", "funding", "advance", "lending", 
@@ -231,6 +255,9 @@ def find_inter_account_transfers(
     Returns:
         Updated list of transactions with is_internal_transfer flags
     """
+    # Sanitize transactions to ensure all are dictionaries (handles malformed AI output)
+    transactions = sanitize_transactions(transactions)
+    
     if not transactions:
         return []
     
@@ -353,6 +380,9 @@ def calculate_revenue_excluding_transfers(transactions: List[Dict]) -> float:
     Returns:
         Total revenue (sum of credits excluding internal transfers)
     """
+    # Sanitize transactions to ensure all are dictionaries
+    transactions = sanitize_transactions(transactions)
+    
     total_revenue = 0.0
     
     for txn in transactions:
@@ -372,6 +402,9 @@ def get_transfer_summary(transactions: List[Dict]) -> Dict:
     Returns:
         Dict with transfer statistics
     """
+    # Sanitize transactions to ensure all are dictionaries
+    transactions = sanitize_transactions(transactions)
+    
     total_transfers = sum(1 for txn in transactions if txn.get('is_internal_transfer', False))
     transfer_amount = sum(abs(safe_float(txn.get('amount', 0))) for txn in transactions if txn.get('is_internal_transfer', False))
     
@@ -413,6 +446,9 @@ def calculate_revenue_with_overrides(transactions: List[Dict], overrides: Option
     Returns:
         Dict with revenue calculation and breakdown
     """
+    # Sanitize transactions to ensure all are dictionaries
+    transactions = sanitize_transactions(transactions)
+    
     overrides = overrides or {}
     
     total_revenue = 0.0
@@ -480,6 +516,9 @@ def cluster_positions_by_merchant(transactions: List[Dict], amount_tolerance: fl
     Returns:
         List of detected position clusters
     """
+    # Sanitize transactions to ensure all are dictionaries
+    transactions = sanitize_transactions(transactions)
+    
     if not transactions:
         return []
     
