@@ -281,6 +281,21 @@ Response:
   - Fixed radio button UX - moved outside form for immediate mode switching
   - Maintained security by keeping XSRF and CORS protection enabled
 
+- **2024-11-25**: Comprehensive AI extraction matching truth Excel structure
+  - **Enhanced OpenAI extraction prompt** to request all fields matching the underwriting Excel:
+    - 10 info_needed metrics (total monthly payments, diesel, holdback %, payment-to-income %, etc.)
+    - Daily/Weekly/Monthly positions with name, amount, and monthly payment
+    - Bank account data with per-month breakdowns (income, deductions, net revenue)
+    - Total revenues by month and deductions matrix
+  - **Added safe_float() helper** to verification.py and transfer_hunter.py for string-to-numeric conversions
+  - **Fixed TypeError** in adversarial training when comparing string amounts to integers
+  - **Updated Forensic Trainer** with comprehensive comparison:
+    - Side-by-side table comparing all 10 info_needed metrics
+    - Positions count comparison (daily, weekly, monthly)
+    - Bank accounts comparison
+    - Match/mismatch indicators for each field
+  - **Updated adversarial_correction_prompt** to handle nested data structure and compare all fields
+
 ## User Preferences
 None specified yet.
 
