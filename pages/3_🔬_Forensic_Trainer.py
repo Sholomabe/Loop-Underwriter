@@ -4,7 +4,7 @@ import os
 from database import get_db
 from models import Deal, PDFFile, Transaction, TrainingExample, GoldStandardRule
 from datetime import datetime
-from openai_integration import adversarial_correction_prompt
+from openai_integration import adversarial_correction_prompt, validate_and_sanitize_transactions
 from excel_parser import parse_underwriting_excel, format_extracted_data_for_display
 
 st.set_page_config(page_title="Forensic Trainer", page_icon="🔬", layout="wide")
@@ -526,8 +526,8 @@ with st.form("upload_training_deal"):
                     )
                     
                     transactions = extracted_data.get('transactions', [])
-                    # Validate transactions - filter out any non-dict items
-                    valid_transactions = [t for t in transactions if isinstance(t, dict)]
+                    # Validate and sanitize transactions using the utility function
+                    valid_transactions = validate_and_sanitize_transactions(transactions)
                     all_transactions.extend(valid_transactions)
                 
                 # Run transfer hunter on all transactions

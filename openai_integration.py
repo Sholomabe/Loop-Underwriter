@@ -101,9 +101,26 @@ def repair_json(malformed_json: str) -> Tuple[Optional[Dict], str]:
     except json.JSONDecodeError as e:
         repair_log.append(f"Repair attempt failed: {e}")
     
-    # Step 6: Try aggressive repair - find valid JSON subset
-    # Start from the beginning and find the longest valid JSON
-    for end_pos in range(len(working_json), 100, -100):
+    # Step 6: Strip trailing non-JSON text after the last closing brace
+    last_brace = working_json.rfind('}')
+    if last_brace > 0 and last_brace < len(working_json) - 1:
+        trailing_text = working_json[last_brace + 1:].strip()
+        if trailing_text and not trailing_text.startswith(','):
+            working_json = working_json[:last_brace + 1]
+            repair_log.append(f"Stripped trailing non-JSON text: {trailing_text[:50]}...")
+            
+            # Try parsing after stripping
+            try:
+                result = json.loads(working_json)
+                repair_log.append("Successfully parsed after stripping trailing text")
+                return result, "\n".join(repair_log)
+            except json.JSONDecodeError:
+                pass  # Continue to aggressive repair
+    
+    # Step 7: Try aggressive repair - find valid JSON subset
+    # Use finer-grained steps (10 chars) for better recovery of short truncations
+    min_length = min(100, len(working_json) // 2)
+    for end_pos in range(len(working_json), min_length, -10):
         test_json = working_json[:end_pos]
         
         # Balance brackets
@@ -172,14 +189,42 @@ def validate_and_sanitize_transactions(transactions: Any) -> List[Dict]:
             'category': str(txn.get('category', 'other')).lower()
         }
         
-        # Parse amount safely
+        # Parse amount safely - handle various bank formats
         amount_raw = txn.get('amount', 0)
+        is_negative = False
+        
         if isinstance(amount_raw, (int, float)):
             validated_txn['amount'] = float(amount_raw)
         elif isinstance(amount_raw, str):
             try:
-                cleaned = amount_raw.replace('$', '').replace(',', '').strip()
-                validated_txn['amount'] = float(cleaned) if cleaned else 0
+                cleaned = amount_raw.strip()
+                
+                # Handle parentheses format for negatives: (1,234.56)
+                if cleaned.startswith('(') and cleaned.endswith(')'):
+                    cleaned = cleaned[1:-1]
+                    is_negative = True
+                
+                # Handle trailing minus: 1,234.56-
+                if cleaned.endswith('-'):
+                    cleaned = cleaned[:-1]
+                    is_negative = True
+                
+                # Handle leading minus: -1,234.56
+                if cleaned.startswith('-'):
+                    cleaned = cleaned[1:]
+                    is_negative = True
+                
+                # Remove currency symbols and thousands separators
+                cleaned = cleaned.replace('$', '').replace(',', '').replace(' ', '')
+                
+                # Handle European format with comma as decimal: 1.234,56 -> 1234.56
+                # If there's a comma after a period, it's likely European
+                if '.' in cleaned and ',' in cleaned:
+                    if cleaned.rindex(',') > cleaned.rindex('.'):
+                        cleaned = cleaned.replace('.', '').replace(',', '.')
+                
+                parsed_amount = float(cleaned) if cleaned else 0
+                validated_txn['amount'] = -parsed_amount if is_negative else parsed_amount
             except:
                 validated_txn['amount'] = 0
         
