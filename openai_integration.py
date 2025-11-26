@@ -17,6 +17,47 @@ openai = OpenAI(
     base_url=AI_INTEGRATIONS_OPENAI_BASE_URL
 )
 
+# MCA Position Detection Keywords - ONLY these count as "Positions"
+MCA_KEYWORDS = [
+    "CAPITAL", "FUNDING", "ADVANCE", "FINANCING", "MANAGEMENT",
+    "CREDIBLY", "FORWARD", "ONDECK", "CAN CAPITAL", "HEADWAY",
+    "KALAMATA", "HUNTER", "KING", "LIBERTAS", "YELLOWSTONE",
+    "CLEARVIEW", "BIZFUND", "RAPID", "MERCHANT", "FACTOR",
+    "MCA", "CASH ADVANCE", "DAILY ACH", "FUNDER"
+]
+
+# Operating Expense Keywords - These go to "Other Liabilities", NOT Positions
+OPERATING_EXPENSE_KEYWORDS = [
+    "DISCOVER", "AMEX", "AMERICAN EXPRESS", "CHASE CARD", "CHASE CREDIT",
+    "INSURANCE", "UTICA", "AMTRUST", "VISA", "MASTERCARD",
+    "PROGRESSIVE", "STATE FARM", "ALLSTATE", "GEICO", "LIBERTY MUTUAL",
+    "CREDIT CARD", "CARD SERVICES"
+]
+
+
+def is_mca_position(description: str) -> bool:
+    """Check if a transaction description matches MCA position keywords."""
+    desc_upper = description.upper()
+    return any(kw in desc_upper for kw in MCA_KEYWORDS)
+
+
+def is_operating_expense(description: str) -> bool:
+    """Check if a transaction description matches operating expense keywords."""
+    desc_upper = description.upper()
+    return any(kw in desc_upper for kw in OPERATING_EXPENSE_KEYWORDS)
+
+
+def classify_position(description: str) -> str:
+    """
+    Classify a debit as either 'mca_position' or 'operating_expense'.
+    Returns 'mca_position' only if it matches MCA keywords and NOT operating expense keywords.
+    """
+    if is_operating_expense(description):
+        return 'operating_expense'
+    if is_mca_position(description):
+        return 'mca_position'
+    return 'other'
+
 
 def repair_json(malformed_json: str) -> Tuple[Optional[Dict], str]:
     """
@@ -296,6 +337,7 @@ def get_default_extraction_result() -> Dict:
         "daily_positions": [],
         "weekly_positions": [],
         "monthly_positions_non_mca": [],
+        "other_liabilities": [],
         "bank_accounts": {},
         "total_revenues_by_month": {},
         "deductions": {},
@@ -394,28 +436,47 @@ Extract ALL of the following data with high precision:
 - Monthly Payment to Income %: Payment as percentage of monthly income ("not_computable" if income unknown)
 - Original Balance to Annual Income %: Original loan balance as % of annual income
 
-## 2. DAILY POSITIONS (Daily payment MCA positions)
-Cluster repeating debits from same merchant occurring on consecutive business days:
-- Name: Lender/Company name
+## 2. DAILY POSITIONS (MCA-ONLY - Daily payment positions)
+**CRITICAL: Only include debits that match MCA keywords!**
+Cluster repeating debits from same MCA lender occurring on consecutive business days:
+- Name: MCA Lender name
 - Amount: Per-payment amount
 - Monthly Payment: Amount × 22 (average business days per month)
 
-## 3. WEEKLY POSITIONS (Weekly payment MCA positions)
-Cluster repeating debits from same merchant occurring ~7 days apart:
-- Name: Lender/Company name
+## 3. WEEKLY POSITIONS (MCA-ONLY - Weekly payment positions)
+**CRITICAL: Only include debits that match MCA keywords!**
+Cluster repeating debits from same MCA lender occurring ~7 days apart:
+- Name: MCA Lender name
 - Amount: Per-payment amount
 - Monthly Payment: Amount × 4.33
 
-## 4. MONTHLY POSITIONS (Non-MCA monthly obligations)
-List each monthly position with:
-- Name: Creditor/Lender name
+## 4. MONTHLY POSITIONS (MCA-ONLY monthly obligations)
+**CRITICAL: Only include debits that match MCA keywords!**
+- Name: MCA Lender name
 - Monthly Payment: Monthly payment amount
 
-IMPORTANT - LENDER DETECTION:
-- Look for ANY recurring debits containing these keywords: Financing, Capital, Funding, Advance, Lending, Merchant, MCA, Loan, Factor
-- Examples: "Intuit Financing", "JNG Capital", "Oat Financial", "Paymentech" - these are ALL lender positions
-- If a lender appears with DIFFERENT amounts or frequencies, list BOTH as separate positions (stacking)
-- Only consolidate positions if you see a "Payoff" credit from that lender
+## 5. OTHER LIABILITIES (Non-MCA recurring debits - separate table)
+Put credit cards, insurance, and non-MCA debts HERE, not in Positions:
+- Name: Creditor name
+- Type: "credit_card", "insurance", "operating_expense"
+- Monthly Payment: Amount
+
+### MCA POSITION DETECTION RULES:
+**WHITELIST - ONLY these keywords qualify as MCA Positions:**
+CAPITAL, FUNDING, ADVANCE, FINANCING, MANAGEMENT, CREDIBLY, FORWARD, ONDECK, CAN CAPITAL, HEADWAY, KALAMATA, HUNTER, KING, LIBERTAS, YELLOWSTONE, CLEARVIEW, BIZFUND, RAPID, MERCHANT, FACTOR, MCA, CASH ADVANCE, DAILY ACH, FUNDER
+
+**BLACKLIST - These are Operating Expenses, NOT Positions:**
+DISCOVER, AMEX, AMERICAN EXPRESS, CHASE CARD, CHASE CREDIT, INSURANCE, UTICA, AMTRUST, VISA, MASTERCARD, PROGRESSIVE, STATE FARM, ALLSTATE, GEICO, LIBERTY MUTUAL, CREDIT CARD, CARD SERVICES
+
+**Example Classifications:**
+- "Kalamata Capital ACH" → DAILY POSITION (matches MCA keyword)
+- "Hunter Funding" → DAILY POSITION (matches MCA keyword)  
+- "Discover Card Payment" → OTHER LIABILITIES (matches blacklist)
+- "AmTrust Insurance" → OTHER LIABILITIES (matches blacklist)
+- "Chase Credit Card" → OTHER LIABILITIES (matches blacklist)
+
+If a debit matches BOTH lists, classify as Operating Expense (blacklist wins).
+If a lender appears with DIFFERENT amounts or frequencies, list BOTH as separate positions (stacking).
 
 ## 5. BANK ACCOUNT DATA (Per-account monthly breakdown)
 For each bank account identified, extract per-month data:
@@ -476,7 +537,10 @@ Output format must be JSON with this EXACT structure:
     {"name": "<lender name>", "amount": <number>, "monthly_payment": <number>}
   ],
   "monthly_positions_non_mca": [
-    {"name": "<creditor name>", "monthly_payment": <number>}
+    {"name": "<MCA lender name>", "monthly_payment": <number>}
+  ],
+  "other_liabilities": [
+    {"name": "<creditor name>", "type": "credit_card|insurance|operating_expense", "monthly_payment": <number>}
   ],
   "bank_accounts": {
     "<account_name>": {
