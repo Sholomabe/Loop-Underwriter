@@ -101,6 +101,7 @@ def merge_extraction_results(results: List[Dict]) -> Dict:
     Merge multiple extraction results from chunked processing.
     
     Combines transactions, positions, and aggregates metrics.
+    Uses intelligent deduplication and preserves AI-calculated values.
     
     Args:
         results: List of extraction results from each chunk
@@ -122,10 +123,13 @@ def merge_extraction_results(results: List[Dict]) -> Dict:
     all_monthly_positions = []
     all_other_liabilities = []
     all_bank_accounts = {}
-    all_revenues_by_month = {}
+    revenues_by_month = {}  # Use max value per month (avoid double-counting)
     all_deductions = {}
     total_nsf = 0
     reasoning_parts = []
+    
+    # Collect AI-calculated info_needed values from each chunk
+    chunk_info_needed = []
     
     for idx, result in enumerate(results):
         if 'transactions' in result:
@@ -136,6 +140,11 @@ def merge_extraction_results(results: List[Dict]) -> Dict:
         all_monthly_positions.extend(result.get('monthly_positions_non_mca', []))
         all_other_liabilities.extend(result.get('other_liabilities', []))
         
+        # Collect info_needed from each chunk for later reconciliation
+        if 'info_needed' in result:
+            chunk_info_needed.append(result['info_needed'])
+        
+        # Bank accounts - dedupe by month
         for account, data in result.get('bank_accounts', {}).items():
             if account not in all_bank_accounts:
                 all_bank_accounts[account] = {'months': []}
@@ -144,24 +153,32 @@ def merge_extraction_results(results: List[Dict]) -> Dict:
                 if month_data.get('month') not in existing_months:
                     all_bank_accounts[account]['months'].append(month_data)
         
+        # Revenues by month - take MAX per month to avoid double-counting overlapping chunks
         for month, revenue in result.get('total_revenues_by_month', {}).items():
-            if month not in all_revenues_by_month:
-                all_revenues_by_month[month] = 0
-            all_revenues_by_month[month] += revenue if isinstance(revenue, (int, float)) else 0
+            if isinstance(revenue, (int, float)):
+                if month not in revenues_by_month:
+                    revenues_by_month[month] = revenue
+                else:
+                    # Take max to handle chunk overlap
+                    revenues_by_month[month] = max(revenues_by_month[month], revenue)
         
+        # Deductions - similar max approach
         for account, months in result.get('deductions', {}).items():
             if account not in all_deductions:
                 all_deductions[account] = {}
             for month, amount in months.items():
-                if month not in all_deductions[account]:
-                    all_deductions[account][month] = 0
-                all_deductions[account][month] += amount if isinstance(amount, (int, float)) else 0
+                if isinstance(amount, (int, float)):
+                    if month not in all_deductions[account]:
+                        all_deductions[account][month] = amount
+                    else:
+                        all_deductions[account][month] = max(all_deductions[account][month], amount)
         
         total_nsf += result.get('nsf_count', 0)
         
         if result.get('reasoning'):
             reasoning_parts.append(f"[Chunk {idx+1}]: {result.get('reasoning')}")
     
+    # Dedupe transactions by date+description+amount
     seen_txn_keys = set()
     unique_transactions = []
     for txn in all_transactions:
@@ -174,7 +191,8 @@ def merge_extraction_results(results: List[Dict]) -> Dict:
         seen = set()
         unique = []
         for p in positions:
-            key = (p.get('name', '').upper(), p.get('amount', 0), p.get('monthly_payment', 0))
+            # Use name + amount as key (allow same lender with different amounts = stacking)
+            key = (p.get('name', '').upper(), round(p.get('amount', 0), 2))
             if key not in seen:
                 seen.add(key)
                 unique.append(p)
@@ -186,10 +204,11 @@ def merge_extraction_results(results: List[Dict]) -> Dict:
     merged['monthly_positions_non_mca'] = dedupe_positions(all_monthly_positions)
     merged['other_liabilities'] = dedupe_positions(all_other_liabilities)
     merged['bank_accounts'] = all_bank_accounts
-    merged['total_revenues_by_month'] = all_revenues_by_month
+    merged['total_revenues_by_month'] = revenues_by_month
     merged['deductions'] = all_deductions
     merged['nsf_count'] = total_nsf
     
+    # Calculate monthly payments from deduplicated positions
     total_monthly_payments = sum(
         p.get('monthly_payment', 0) for p in merged['daily_positions']
     ) + sum(
@@ -198,19 +217,39 @@ def merge_extraction_results(results: List[Dict]) -> Dict:
         p.get('monthly_payment', 0) for p in merged['monthly_positions_non_mca']
     )
     
-    total_revenue = sum(all_revenues_by_month.values()) if all_revenues_by_month else 0
-    num_months = len(all_revenues_by_month) if all_revenues_by_month else 1
+    # Calculate income from revenues (already deduplicated by month)
+    total_revenue = sum(revenues_by_month.values()) if revenues_by_month else 0
+    num_months = len(revenues_by_month) if revenues_by_month else 1
     avg_monthly_income = total_revenue / num_months if num_months > 0 else 0
+    
+    # Aggregate diesel payments from chunk info_needed
+    diesel_total = 0
+    holdback_pct = 'not_computable'
+    monthly_holdback = 0
+    
+    for info in chunk_info_needed:
+        diesel_val = info.get('diesel_total_monthly_payments', 0)
+        if isinstance(diesel_val, (int, float)):
+            diesel_total += diesel_val
+        
+        # Take first valid holdback found
+        hb = info.get('holdback_percentage')
+        if holdback_pct == 'not_computable' and isinstance(hb, (int, float)):
+            holdback_pct = hb
+        
+        mh = info.get('monthly_holdback', 0)
+        if isinstance(mh, (int, float)):
+            monthly_holdback = max(monthly_holdback, mh)
     
     merged['info_needed'] = {
         'total_monthly_payments': total_monthly_payments,
-        'diesel_total_monthly_payments': 0,
-        'total_monthly_payments_with_diesel': total_monthly_payments,
+        'diesel_total_monthly_payments': diesel_total,
+        'total_monthly_payments_with_diesel': total_monthly_payments + diesel_total,
         'average_monthly_income': avg_monthly_income if avg_monthly_income > 0 else 'not_computable',
         'annual_income': avg_monthly_income * 12 if avg_monthly_income > 0 else 'not_computable',
         'length_of_deal_months': num_months,
-        'holdback_percentage': 'not_computable',
-        'monthly_holdback': 0,
+        'holdback_percentage': holdback_pct,
+        'monthly_holdback': monthly_holdback,
         'monthly_payment_to_income_pct': (total_monthly_payments / avg_monthly_income * 100) if avg_monthly_income > 0 else 'not_computable',
         'original_balance_to_annual_income_pct': 0
     }

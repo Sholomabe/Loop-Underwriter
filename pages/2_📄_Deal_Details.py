@@ -68,7 +68,7 @@ st.sidebar.metric("Daily Payment", f"${daily_payment:,.2f}")
 st.sidebar.metric("Weekly Payment", f"${weekly_payment:,.2f}")
 st.sidebar.metric("Monthly Payment", f"${monthly_payment:,.2f}")
 
-st.sidebar.session_state['simulated_diesel_monthly'] = monthly_payment
+st.session_state['simulated_diesel_monthly'] = monthly_payment
 
 # ============================================
 # MAIN PAGE
@@ -128,7 +128,7 @@ with get_db() as db:
         info_needed = data.get('info_needed', data)
         net_revenue = safe_float(info_needed.get('average_monthly_income', 0))
         current_payments = safe_float(info_needed.get('total_monthly_payments', 0))
-        simulated_diesel = st.sidebar.session_state.get('simulated_diesel_monthly', 0)
+        simulated_diesel = st.session_state.get('simulated_diesel_monthly', 0)
         
         projected_balance = net_revenue - current_payments - simulated_diesel
         
