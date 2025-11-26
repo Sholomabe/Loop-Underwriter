@@ -214,14 +214,51 @@ def validate_and_sanitize_transactions(transactions: Any) -> List[Dict]:
                     cleaned = cleaned[1:]
                     is_negative = True
                 
-                # Remove currency symbols and thousands separators
-                cleaned = cleaned.replace('$', '').replace(',', '').replace(' ', '')
+                # Remove currency symbols
+                cleaned = cleaned.replace('$', '').replace('€', '').replace('£', '')
                 
-                # Handle European format with comma as decimal: 1.234,56 -> 1234.56
-                # If there's a comma after a period, it's likely European
-                if '.' in cleaned and ',' in cleaned:
-                    if cleaned.rindex(',') > cleaned.rindex('.'):
+                # Remove various space characters (including non-breaking space)
+                cleaned = cleaned.replace(' ', '').replace('\u00a0', '').replace('\u202f', '')
+                
+                # Handle different number formats
+                has_comma = ',' in cleaned
+                has_period = '.' in cleaned
+                
+                if has_comma and has_period:
+                    # Both separators present - determine which is decimal
+                    comma_pos = cleaned.rindex(',')
+                    period_pos = cleaned.rindex('.')
+                    
+                    if comma_pos > period_pos:
+                        # European format: 1.234,56 -> 1234.56
                         cleaned = cleaned.replace('.', '').replace(',', '.')
+                    else:
+                        # US format: 1,234.56 -> 1234.56
+                        cleaned = cleaned.replace(',', '')
+                elif has_comma and not has_period:
+                    # Check if comma is likely a decimal separator
+                    # If only one comma and 1-2 digits after it, treat as decimal
+                    comma_count = cleaned.count(',')
+                    if comma_count == 1:
+                        parts = cleaned.split(',')
+                        if len(parts[1]) <= 2:
+                            # European decimal: 1234,56 -> 1234.56
+                            cleaned = cleaned.replace(',', '.')
+                        else:
+                            # US thousands separator: 1,234 -> 1234
+                            cleaned = cleaned.replace(',', '')
+                    else:
+                        # Multiple commas = thousands separators: 1,234,567 -> 1234567
+                        cleaned = cleaned.replace(',', '')
+                elif has_period and not has_comma:
+                    # Single period - could be decimal or thousands
+                    period_count = cleaned.count('.')
+                    if period_count == 1:
+                        # Likely decimal, keep as-is
+                        pass
+                    else:
+                        # Multiple periods = likely European thousands: 1.234.567 -> 1234567
+                        cleaned = cleaned.replace('.', '')
                 
                 parsed_amount = float(cleaned) if cleaned else 0
                 validated_txn['amount'] = -parsed_amount if is_negative else parsed_amount
