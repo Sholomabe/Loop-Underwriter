@@ -59,6 +59,168 @@ def classify_position(description: str) -> str:
     return 'other'
 
 
+# PDF Chunking Configuration
+CHUNK_SIZE = 50000  # Characters per chunk (OpenAI can handle ~100k tokens)
+CHUNK_OVERLAP = 2000  # Overlap between chunks to avoid cutting transactions
+
+
+def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> List[str]:
+    """
+    Split large text into overlapping chunks for processing.
+    
+    Args:
+        text: Full PDF text
+        chunk_size: Maximum characters per chunk
+        overlap: Characters to overlap between chunks
+        
+    Returns:
+        List of text chunks
+    """
+    if len(text) <= chunk_size:
+        return [text]
+    
+    chunks = []
+    start = 0
+    
+    while start < len(text):
+        end = start + chunk_size
+        
+        if end < len(text):
+            newline_pos = text.rfind('\n', start + chunk_size - overlap, end)
+            if newline_pos > start:
+                end = newline_pos + 1
+        
+        chunks.append(text[start:end])
+        start = end - overlap if end < len(text) else end
+    
+    return chunks
+
+
+def merge_extraction_results(results: List[Dict]) -> Dict:
+    """
+    Merge multiple extraction results from chunked processing.
+    
+    Combines transactions, positions, and aggregates metrics.
+    
+    Args:
+        results: List of extraction results from each chunk
+        
+    Returns:
+        Merged extraction result
+    """
+    if not results:
+        return get_default_extraction_result()
+    
+    if len(results) == 1:
+        return results[0]
+    
+    merged = get_default_extraction_result()
+    
+    all_transactions = []
+    all_daily_positions = []
+    all_weekly_positions = []
+    all_monthly_positions = []
+    all_other_liabilities = []
+    all_bank_accounts = {}
+    all_revenues_by_month = {}
+    all_deductions = {}
+    total_nsf = 0
+    reasoning_parts = []
+    
+    for idx, result in enumerate(results):
+        if 'transactions' in result:
+            all_transactions.extend(result.get('transactions', []))
+        
+        all_daily_positions.extend(result.get('daily_positions', []))
+        all_weekly_positions.extend(result.get('weekly_positions', []))
+        all_monthly_positions.extend(result.get('monthly_positions_non_mca', []))
+        all_other_liabilities.extend(result.get('other_liabilities', []))
+        
+        for account, data in result.get('bank_accounts', {}).items():
+            if account not in all_bank_accounts:
+                all_bank_accounts[account] = {'months': []}
+            existing_months = {m.get('month') for m in all_bank_accounts[account].get('months', [])}
+            for month_data in data.get('months', []):
+                if month_data.get('month') not in existing_months:
+                    all_bank_accounts[account]['months'].append(month_data)
+        
+        for month, revenue in result.get('total_revenues_by_month', {}).items():
+            if month not in all_revenues_by_month:
+                all_revenues_by_month[month] = 0
+            all_revenues_by_month[month] += revenue if isinstance(revenue, (int, float)) else 0
+        
+        for account, months in result.get('deductions', {}).items():
+            if account not in all_deductions:
+                all_deductions[account] = {}
+            for month, amount in months.items():
+                if month not in all_deductions[account]:
+                    all_deductions[account][month] = 0
+                all_deductions[account][month] += amount if isinstance(amount, (int, float)) else 0
+        
+        total_nsf += result.get('nsf_count', 0)
+        
+        if result.get('reasoning'):
+            reasoning_parts.append(f"[Chunk {idx+1}]: {result.get('reasoning')}")
+    
+    seen_txn_keys = set()
+    unique_transactions = []
+    for txn in all_transactions:
+        key = (txn.get('date', ''), txn.get('description', ''), txn.get('amount', 0))
+        if key not in seen_txn_keys:
+            seen_txn_keys.add(key)
+            unique_transactions.append(txn)
+    
+    def dedupe_positions(positions: List[Dict]) -> List[Dict]:
+        seen = set()
+        unique = []
+        for p in positions:
+            key = (p.get('name', '').upper(), p.get('amount', 0), p.get('monthly_payment', 0))
+            if key not in seen:
+                seen.add(key)
+                unique.append(p)
+        return unique
+    
+    merged['transactions'] = unique_transactions
+    merged['daily_positions'] = dedupe_positions(all_daily_positions)
+    merged['weekly_positions'] = dedupe_positions(all_weekly_positions)
+    merged['monthly_positions_non_mca'] = dedupe_positions(all_monthly_positions)
+    merged['other_liabilities'] = dedupe_positions(all_other_liabilities)
+    merged['bank_accounts'] = all_bank_accounts
+    merged['total_revenues_by_month'] = all_revenues_by_month
+    merged['deductions'] = all_deductions
+    merged['nsf_count'] = total_nsf
+    
+    total_monthly_payments = sum(
+        p.get('monthly_payment', 0) for p in merged['daily_positions']
+    ) + sum(
+        p.get('monthly_payment', 0) for p in merged['weekly_positions']
+    ) + sum(
+        p.get('monthly_payment', 0) for p in merged['monthly_positions_non_mca']
+    )
+    
+    total_revenue = sum(all_revenues_by_month.values()) if all_revenues_by_month else 0
+    num_months = len(all_revenues_by_month) if all_revenues_by_month else 1
+    avg_monthly_income = total_revenue / num_months if num_months > 0 else 0
+    
+    merged['info_needed'] = {
+        'total_monthly_payments': total_monthly_payments,
+        'diesel_total_monthly_payments': 0,
+        'total_monthly_payments_with_diesel': total_monthly_payments,
+        'average_monthly_income': avg_monthly_income if avg_monthly_income > 0 else 'not_computable',
+        'annual_income': avg_monthly_income * 12 if avg_monthly_income > 0 else 'not_computable',
+        'length_of_deal_months': num_months,
+        'holdback_percentage': 'not_computable',
+        'monthly_holdback': 0,
+        'monthly_payment_to_income_pct': (total_monthly_payments / avg_monthly_income * 100) if avg_monthly_income > 0 else 'not_computable',
+        'original_balance_to_annual_income_pct': 0
+    }
+    
+    merged['reasoning'] = "\n\n".join(reasoning_parts) if reasoning_parts else "Merged from multiple chunks"
+    merged['chunk_count'] = len(results)
+    
+    return merged
+
+
 def repair_json(malformed_json: str) -> Tuple[Optional[Dict], str]:
     """
     Attempt to repair malformed JSON from AI responses.
@@ -573,12 +735,83 @@ Output format must be JSON with this EXACT structure:
     if error_feedback:
         system_prompt += f"\n\nPREVIOUS ATTEMPT HAD AN ERROR:\n{error_feedback}\n\nPlease re-scan the document carefully, find the missing data or correct your calculations."
     
+    # Check if we need chunked processing for large PDFs
+    text_length = len(pdf_text)
+    print(f"PDF text length: {text_length} characters")
+    
+    if text_length > CHUNK_SIZE:
+        # Large PDF - use chunked processing
+        chunks = chunk_text(pdf_text, CHUNK_SIZE, CHUNK_OVERLAP)
+        print(f"Large PDF detected. Processing {len(chunks)} chunks...")
+        
+        chunk_results = []
+        all_reasoning = []
+        
+        for chunk_idx, chunk in enumerate(chunks):
+            print(f"Processing chunk {chunk_idx + 1}/{len(chunks)} ({len(chunk)} chars)...")
+            
+            user_prompt = f"""Analyze this bank statement CHUNK ({chunk_idx + 1} of {len(chunks)}) and extract ALL financial data for MCA underwriting.
+
+Account ID: {account_id or 'Unknown'}
+
+**NOTE: This is chunk {chunk_idx + 1} of {len(chunks)}. Extract all data you find in THIS chunk - results will be merged later.**
+
+Bank Statement Text (Chunk {chunk_idx + 1}):
+{chunk}
+
+Remember:
+1. Extract ALL sections (info_needed, positions, bank accounts, revenues, deductions, transactions)
+2. All values must be numbers (no currency symbols or percentage signs)
+3. This is a partial document - extract what's visible in this chunk
+4. Include all transactions visible in this chunk
+5. Use "not_computable" for metrics that can't be determined from this chunk alone"""
+
+            try:
+                response = openai.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    response_format={"type": "json_object"},
+                    max_completion_tokens=8192
+                )
+                
+                result_text = response.choices[0].message.content or "{}"
+                
+                try:
+                    result_data = json.loads(result_text)
+                except json.JSONDecodeError as json_err:
+                    print(f"Chunk {chunk_idx + 1} JSON parse error, attempting repair: {json_err}")
+                    result_data, repair_log = repair_json(result_text)
+                    if result_data is None:
+                        result_data = get_default_extraction_result()
+                        result_data["error"] = f"Chunk {chunk_idx + 1} parse failed"
+                
+                if 'transactions' in result_data:
+                    result_data['transactions'] = validate_and_sanitize_transactions(result_data['transactions'])
+                
+                chunk_results.append(result_data)
+                all_reasoning.append(f"[Chunk {chunk_idx + 1}]: {result_data.get('reasoning', 'No reasoning')}")
+                
+            except Exception as e:
+                print(f"Error processing chunk {chunk_idx + 1}: {e}")
+                chunk_results.append(get_default_extraction_result())
+                all_reasoning.append(f"[Chunk {chunk_idx + 1}]: Error - {str(e)}")
+        
+        # Merge all chunk results
+        merged_result = merge_extraction_results(chunk_results)
+        merged_reasoning = f"Processed {len(chunks)} chunks from {text_length} character PDF.\n\n" + "\n\n".join(all_reasoning)
+        
+        return merged_result, merged_reasoning
+    
+    # Standard processing for smaller PDFs
     user_prompt = f"""Analyze this bank statement and extract ALL financial data for MCA underwriting.
 
 Account ID: {account_id or 'Unknown'}
 
 Bank Statement Text:
-{pdf_text[:12000]}  
+{pdf_text}
 
 Remember:
 1. Extract ALL sections (info_needed, positions, bank accounts, revenues, deductions, transactions)
@@ -588,10 +821,8 @@ Remember:
 5. Verify sums match"""
     
     try:
-        # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
-        # do not change this unless explicitly requested by the user
         response = openai.chat.completions.create(
-            model="gpt-4o",  # Using gpt-4o for vision capabilities
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -602,7 +833,6 @@ Remember:
         
         result_text = response.choices[0].message.content or "{}"
         
-        # Try to parse JSON, with repair fallback
         result_data = None
         parse_log = ""
         
@@ -614,13 +844,11 @@ Remember:
             result_data, parse_log = repair_json(result_text)
             
             if result_data is None:
-                # Repair failed, return default with error info
                 default_result = get_default_extraction_result()
                 default_result["error"] = f"JSON parse failed: {json_err}"
                 default_result["parse_log"] = parse_log
                 return default_result, f"Error: JSON parsing failed after repair attempt.\n{parse_log}"
         
-        # Validate and sanitize transactions
         if 'transactions' in result_data:
             original_count = len(result_data.get('transactions', []))
             result_data['transactions'] = validate_and_sanitize_transactions(result_data['transactions'])
