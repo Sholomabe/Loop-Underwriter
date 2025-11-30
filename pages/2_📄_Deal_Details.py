@@ -451,6 +451,102 @@ with get_db() as db:
     st.divider()
     
     # ============================================
+    # SECTION 5.5: AI VERIFICATION AGENT
+    # ============================================
+    st.header("🤖 AI Verification - Second Opinion")
+    st.caption("AI reviews the calculated metrics and flags any anomalies")
+    
+    if 'ai_verification' not in st.session_state:
+        st.session_state['ai_verification'] = None
+    
+    col1, col2 = st.columns([3, 1])
+    
+    with col2:
+        if st.button("🔍 Get AI Verification", type="primary"):
+            with st.spinner("AI is reviewing the underwriting metrics..."):
+                try:
+                    from ai_verification_agent import get_ai_verification, get_quick_validation
+                    
+                    calculated_metrics = {
+                        'total_income': safe_float(info_needed.get('annual_income', 0)) / 12 if info_needed.get('annual_income', 0) != 'not_computable' else 0,
+                        'net_revenue': safe_float(info_needed.get('average_monthly_income', 0)) if info_needed.get('average_monthly_income', 0) != 'not_computable' else 0,
+                        'average_monthly_income': safe_float(info_needed.get('average_monthly_income', 0)) if info_needed.get('average_monthly_income', 0) != 'not_computable' else 0,
+                        'annual_income': safe_float(info_needed.get('annual_income', 0)) if info_needed.get('annual_income', 0) != 'not_computable' else 0,
+                        'months_analyzed': info_needed.get('length_of_deal_months', 0),
+                        'total_monthly_payments': safe_float(info_needed.get('total_monthly_payments', 0)),
+                        'diesel_total_monthly_payments': safe_float(info_needed.get('diesel_total_monthly_payments', 0)),
+                        'total_monthly_payments_with_diesel': safe_float(info_needed.get('total_monthly_payments_with_diesel', 0)),
+                        'payment_to_income_ratio': safe_float(info_needed.get('monthly_payment_to_income_pct', 0)) if info_needed.get('monthly_payment_to_income_pct', 0) != 'not_computable' else 0
+                    }
+                    
+                    positions = daily_positions + weekly_positions + monthly_positions
+                    
+                    monthly_breakdown = [
+                        {'month': month, 'revenue': amount}
+                        for month, amount in total_revenues.items()
+                    ]
+                    
+                    verification = get_ai_verification(
+                        calculated_metrics=calculated_metrics,
+                        positions=positions,
+                        monthly_breakdown=monthly_breakdown,
+                        raw_transaction_count=len(transactions),
+                        detected_transfers=transfer_count
+                    )
+                    
+                    st.session_state['ai_verification'] = verification
+                    
+                except Exception as e:
+                    st.error(f"Error getting AI verification: {str(e)}")
+    
+    with col1:
+        if st.session_state['ai_verification']:
+            verification = st.session_state['ai_verification']
+            
+            if verification.get('success'):
+                if verification.get('flags'):
+                    critical_flags = [f for f in verification['flags'] if f.get('severity') == 'critical']
+                    warning_flags = [f for f in verification['flags'] if f.get('severity') == 'warning']
+                    
+                    if critical_flags:
+                        st.error(f"🚨 {len(critical_flags)} Critical Issue(s) Found")
+                    elif warning_flags:
+                        st.warning(f"⚠️ {len(warning_flags)} Warning(s) Found")
+                    else:
+                        st.success("✅ No Major Issues Detected")
+                
+                st.markdown("### AI Second Opinion")
+                st.markdown(verification.get('ai_opinion', 'No opinion available'))
+            else:
+                st.warning(verification.get('ai_opinion', 'Unable to generate verification'))
+        else:
+            from ai_verification_agent import get_quick_validation
+            
+            avg_monthly = safe_float(info_needed.get('average_monthly_income', 0)) if info_needed.get('average_monthly_income', 0) != 'not_computable' else 0
+            total_pmt = safe_float(info_needed.get('total_monthly_payments_with_diesel', info_needed.get('total_monthly_payments', 0)))
+            position_count = len(daily_positions) + len(weekly_positions) + len(monthly_positions)
+            months = info_needed.get('length_of_deal_months', 0)
+            
+            quick_check = get_quick_validation(avg_monthly, total_pmt, position_count, months)
+            
+            if quick_check['passed']:
+                st.success(f"✅ Quick Check: {quick_check['summary']}")
+            else:
+                st.warning(f"⚠️ Quick Check: {quick_check['summary']}")
+            
+            for warning in quick_check.get('warnings', []):
+                if warning['type'] == 'critical':
+                    st.error(f"🚨 {warning['message']}")
+                elif warning['type'] == 'warning':
+                    st.warning(f"⚠️ {warning['message']}")
+                else:
+                    st.info(f"ℹ️ {warning['message']}")
+            
+            st.caption("Click 'Get AI Verification' for a detailed AI review")
+    
+    st.divider()
+    
+    # ============================================
     # SECTION 6: AI REASONING LOG
     # ============================================
     st.header("🧠 AI Reasoning Log")

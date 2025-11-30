@@ -92,3 +92,43 @@ class Setting(Base):
     category = Column(String(100))  # Underwriting Rules, System Config, etc.
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class KnownVendor(Base):
+    """
+    Store known vendors/merchants for automatic categorization.
+    Used by the Vendor Learning System for fuzzy matching.
+    """
+    __tablename__ = "known_vendors"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False, index=True)  # Vendor name pattern
+    category = Column(String(50), nullable=False)  # MCA, Rent, Payroll, Insurance, Utilities, Ignore, etc.
+    match_type = Column(String(20), default="fuzzy")  # exact, fuzzy, contains
+    is_mca_lender = Column(Boolean, default=False)  # True if this is an MCA/lending position
+    default_frequency = Column(String(20))  # daily, weekly, monthly (for MCA positions)
+    notes = Column(Text)  # Additional context
+    times_matched = Column(Integer, default=0)  # Track usage for confidence
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class UnknownTransaction(Base):
+    """
+    Review queue for unrecognized recurring transactions.
+    When pattern detection finds unknown recurring payments, they go here for human review.
+    """
+    __tablename__ = "unknown_transactions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    deal_id = Column(Integer, ForeignKey("deals.id"), nullable=True)
+    description = Column(Text, nullable=False)  # Original transaction description
+    normalized_name = Column(String(255))  # Cleaned/normalized name
+    detected_frequency = Column(String(20))  # daily, weekly, monthly
+    average_amount = Column(Float)  # Average transaction amount
+    occurrence_count = Column(Integer, default=1)  # How many times seen
+    sample_dates = Column(JSON)  # Sample of dates when this appeared
+    status = Column(String(20), default="pending")  # pending, categorized, ignored
+    assigned_category = Column(String(50))  # Category assigned by user (if any)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    reviewed_at = Column(DateTime)  # When user reviewed this
