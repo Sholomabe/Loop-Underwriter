@@ -1,0 +1,323 @@
+Page 1
+CHASE
+JPMorgan Chase Bank, N.A.
+P O Box 182051
+Columbus, OH 43218 2051
+August 01, 2024 through August 30, 2024
+Account Number: 000000912093783
+CUSTOMER SERVICE INFORMATION
+Web site:;Chase.com;
+Service Center:;1-800-242-7338;
+Para Espanol:;1-888-622-4273;
+International Calls:;1-713-262-1679;
+00350770 DRE 201 219 24424 NNNNNNNNNNN 1 000000000 64 0000
+ANIMATION AND ROBOTICS FOR KIDS,
+DBA SMART CORE LABS
+3011 JOSHUA TREE LN
+MANVEL TX 77578-3683
+We accept operator relay calls
+03507700501000000025
+We're updating our Deposit Account Agreement, including the Arbitration section
+On November 17, 2024, we're updating section X. Arbitration; Resolving Disputes in the Deposit Account Agreement. We've
+included excerpts of the more significant updates at the end of this statement. The Arbitration section explains how potential
+disputes and claims are handled between us. You can opt out of arbitration any time before January 16, 2025, by
+calling us at 1-800-242-7338.
+You can view the full updated section in the Deposit Account Agreement which will be available on November 17
+at chase.com/business/disclosures or by visiting a branch. The new agreement will include these changes as well as any
+additional updates occurring at this time.
+If you have any questions, please call the number on this statement. We accept operator relay calls.
+CHECKING SUMMARY
+Chase Business Complete Checking
+;INSTANCES;AMOUNT;
+Beginning Balance;;$37,495.84;
+Deposits and Additions;25;62,902.60;
+Checks Paid;3;-7,996.16;
+ATM & Debit Card Withdrawals;8;-1,292.61;
+Electronic Withdrawals;58;-64,691.31;
+Other Withdrawals;2;-17,100.00;
+Ending Balance;96;$9,318.36;
+Congratulations, we waived the $15 Monthly Service Fee for this statement period, based on your qualifying activity.
+How to Avoid the Monthly Service Fee (MSF)
+If you meet any of the following qualifying activities for this Chase Business Complete CheckingˢM account in a statement
+period, we will waive the $15 MSF.
+Here's the business activity we used to determine if you qualified for the MSF waiver:
+$2,000 Minimum Daily Ending Balance: Your lowest daily ending balance was $7,814.53.
+$2,000 Chase Payment Solutions Activity: $0.00 was deposited into this account.
+$2,000 Chase Ink® Business Card Activity: $0.00 was your total Ink activity.
+You can also avoid the MSF if you:: Maintain a linked Chase Private Client CheckingˢM account OR Meet Chase Military Banking requirements
+For complete details on all requirements to avoid the MSF, please review the Additional Banking Services and Fees for
+Business Accounts at chase.com/business/disclosures or visit a Chase branch.
+Page 1 of 10
+
+Page 2
+CHASE
+August 01, 2024 through August 30, 2024
+Account Number:: 000000912093783
+DEPOSITS AND ADDITIONS
+DATE;DESCRIPTION;;AMOUNT;
+08/01;Orig CO Name:Sawyer Descr:Sawyertoolsec:CCD ID:St-B0P9M6M7J5F6;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000020645761 Eed:240801 Ind Ind Name:Mir Hamid Ali Khan Trn: 2140645761Tc;$1,006.88;
+08/02;Deposit 2030145549;;220.00;
+08/05;Orig CO Name: Sawyer Descr:Sawyertoolsec:CCD ID:St-D7V1C6T1A3X2;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000026098673 Eed:240805 Ind Ind Name:Mir Hamid Ali Khan Trn: 2186098673Tc;11,770.33;
+08/05;Wire Reversal B/O: JPMorgan Retail Inv Ref:/Bnf/Our Ref;Chase Bank National Columbus OH 43240 US Org: Ts Fx Jpv240722-002976 Trn: 6241100218Hh;240.00;
+08/06;Orig CO Name:Sawyer Descr:Sawyertoolsec:CCD ID:St-L6T5T1T2U0E8;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000025777827 Eed:240806 Ind Ind Name:Mir Hamid Ali Khan Trn: 2195777827Tc;1,291.58;
+08/07;Orig CO Name:Sawyer Descr:Sawyertoolsec:CCD ID:St-P8Y7J8G6W9F7;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000023928616 Eed:240807 Ind Ind Name:Mir Hamid Ali Khan Trn: 2203928616Tc;4,075.28;
+08/08;Orig CO Name:Sawyer Descr:Sawyertoolsec:CCD ID:St-F4U3O6O4W1X0;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000024398203 Eed:240808 Ind Ind Name:Mir Hamid Ali Khan Trn: 2214398203Tc;1,174.15;
+08/09;Orig CO Name:Intuit 98175455 Descr: Deposit Sec:CCD ID:524771996127012;Orig ID:9215986202 Desc Date:240809 CO Entry Trace#:021000022513829 Eed:240809 Ind Ind Name:Animation And Robotics Trn: 2222513829Tc;14,880.00;
+08/09;Orig CO Name:Sawyer Descr:Sawyertoolsec:CCD ID:St-K7M4V6R9E8A9;Orig ID:4270465600 Desc Date: CO Entry Trace#:111000026818176 Eed:240809 Ind Ind Name:Mir Hamid Ali Khan Trn: 2226818176Tc;322.54;
+08/12;Orig CO Name:Sawyer Descr:Sawyertoolsec:CCD ID:St-C4T0W4A4O4S7;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000021960146 Eed:240812 Ind Ind Name:Mi Hamid Ali Khan Trn: 2251960146Tc;310.51;
+08/13;Orig CO Name:Intuit 73467513 Descr: Deposit Sec:CCD ID:524771996127012;Orig ID:9215986202 Desc Date:240813 CO Entry Trace#:021000020310210 Eed:240813 Ind Ind Name:Animation And Robotics Trn: 2260310210Tc;15,360.00;
+08/13;Orig CO Name: Sawyer Descr:Sawyertoolsec:CCD ID:St-C0I6U6R8F5H2;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000025237362 Eed:240813 Ind Ind Name:Mir Hamid Ali Khan Trn: 2265237362Tc;265.37;
+08/14;Orig CO Name:Sawyer Descr:Sawyertoolsec:CCD ID:St-X8D7E9D6W1L8;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000021560110 Eed:240814 Ind Ind Name:Mi Hamid Ali Khan Trn: 2271560110Tc;1,058.65;
+08/15;Orig CO Name:Sawyer Descr:Sawyertoolsec:CCD ID:St-G7J8M5A6Q2D8;Orig ID:4270465600 Desc Date: CO Entry Trace#:111000027825578 Eed:240815 Ind Ind Name: Mir Hamid Ali Khan Trn: 2287825578Tc;973.80;
+08/16;Orig CO Name: Sawyer Descr:Sawyertoolsec:CCD ID:St-B3P9H8B4Z9U0;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000027401745 Eed:240816 Ind Ind Name:M Hamid Ali Khan Trn: 2297401745Tc;455.59;
+08/19;Orig CO Name: Sawyer Descr:Sawyertoolsec:CCD ID:St-D6W4S4K8X7N1;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000026459549 Eed:240819 Ind Ind Name: Mir Hamid Ali Khan Trn: 2326459549Tc;980.44;
+08/20;Orig CO Name: Descr:Sawyertoolsec:CCD ID:St-Z0S7D1V3R4Z5;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000023946907 Eed:240820 Ind Ind Name:Mir Hamid Ali Khan Trn: 2333946907Tc;1,145.24;
+08/21;Orig CO Name:Sawyer Descr:Sawyertoolsec:CCD ID:St-V1X7F5V6O8D2;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000028504564 Eed:240821 Ind Ind Name:Mir Hamid Ali Khan Trn: 2348504564Tc;1,150.13;
+08/22;ATM Check Deposit 08/22;10611 Broadway St Pearland TX Card 5494;3,240.00;
+08/23;Orig CO Name: Sawyer Descr:Sawyertoolsec:CCD ID:St-V9C1V9Q3Q7D9;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000021409329 Eed:240823 Ind Ind Name: Mir Hamid Ali Khan Trn: 2361409329Tc;141.96;
+08/26;Orig CO Name: Sawyer Descr:Sawyertoolsec:CCD ID:St-S0P1J5L7N3B2;Orig ID:4270465600 Desc Date: CO Entry Trace#: 11000023455367 Eed:240826 Ind Ind Name:Mir Hamid Ali Khan Trn: 2393455367Tc;55.29;
+Wire Reversal B/O: JPMorgan Chase Bank National Columbus OH 43240 US Org: Ts Fx
+Retail Inv Ref:/Bnf/Our Ref Jpv240722-002976 Trn: 6241100218Hh
+Page 2 of 10
+
+Page 3
+CHASE
+August 01, 2024 through August 30, 2024
+Account Number: 000000912093783
+DEPOSITS AND ADDITIONS
+(continued)
+DATE;DESCRIPTION;;AMOUNT;
+08/27;Orig CO Name:Sawyer Descr:Sawyertoolsec:CCD ID:St-F2F5W7A7F6F5;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000026692107 Eed:240827 Ind Ind Name: Mir Hamid Ali Khan Trn: 2406692107Tc;512.28;
+08/28;Orig CO Name:Sawyer Descr:Sawyertoolsec:CCD ID:St-Z0W2B3G1J9P5;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000022029232 Eed:240828 Ind Ind Name:Mir Hamid Ali Khan Trn: 2412029232Tc;1,268.62;
+08/29;Orig CO Name:Sawyer Descr:Sawyertoolsec:CCD ID:St-C3G8M3L2R8Z7;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000027696213 Eed:240829 Ind Ind Name:M Hamid Ali Khan Trn: 2427696213Tc;917.18;
+08/30;Orig CO Name: Sawyer Descr:Sawyertoolsec:CCD ID:St-B5P0L3W0M2O7;Orig ID:4270465600 Desc Date: CO Entry Trace#: 111000023510910 Eed:240830 Ind Ind Name:Mir Hamid Ali Khan Trn: 2433510910Tc;86.78;
+Total;Deposits and Additions;;$62,902.60;
+13507700502000000065
+CHECKS PAID
+CHECK NO.;DESCRIPTION;DATE PAID;AMOUNT;
+4004 ^;;08/13;$7,496.16;
+4027 * л;;08/06;250.00;
+4028 ^;;08/13;250.00;
+Total Checks;Paid;;$7,996.16;
+If you see a description in the Checks Paid section, it means that we received only electronic information about the check,
+not the original or an image of the check. As a result, we're not able to return the check to you or show you an image.
+All of your recent checks may not be on this statement, either because they haven't cleared yet or they were listed on
+one of your previous statements.
+^ An image of this check may be available for you to view on Chase.com.
+*
+ATM & DEBIT CARD WITHDRAWALS
+DATE;DESCRIPTION;;AMOUNT;
+08/07;Recurring Card;Purchase 08/06 Sawyer Httpswww. MI Card 5494;$179.00;
+08/12;Card Purchase;08/09 Smith Thompson Home S 972-526-8500 TX Card 5494;32.42;
+08/13;Card Purchase;08/12 Constellation Energy 215-841-5027 IL Card 5494;586.74;
+08/13;Card Purchase;08/12 Amazon.Com*Rm1Gx5942 Amzn.Com/Bill WA Card 5494;63.80;
+08/13;Card Purchase;08/13 Amazon Mktpl*Rm0Qq5U Amzn.Com/Bill WA Card 5494;85.38;
+08/26;Card Purchase;08/24 Amazon.Com*R496Z0Xs1 Amzn.Com/Bill WA Card 5494;77.49;
+08/26;Card Purchase;08/25 Amazon Mktpl*Rk6K210 Amzn. Com/Bill WA Card 5494;22.19;
+08/28;Recurring Card;Purchase 08/28 Intuit *Qbooks Onlin Cl.Intuit.Co CA Card 5494;245.59;
+Total;ATM & Debit Card;Withdrawals;$1,292.61;
+ATM & DEBIT CARD SUMMARY
+Mir Khan Card 5494
+Total ATM Withdrawals & Debits: $0.00
+Total Card Purchases: $1,292.61
+Total Card Deposits & Credits: $3,240.00
+ATM & Debit Card Totals
+Total ATM Withdrawals & Debits;$0.00;
+Total Card Purchases;$1,292.61;
+Total Card Deposits & Credits;$3,240.00;
+Page 3 of 10
+
+Page 4
+CHASE
+August 01, 2024 through August 30, 2024
+Account Number:: 000000912093783
+ELECTRONIC WITHDRAWALS
+DATE;DESCRIPTION;AMOUNT;
+08/01;Orig CO Name:Headwaycapital 2 Orig ID:Rep-Enova Desc Date:240801 CO Entry Descr:D001155622Sec:CCD Trace#:096016939321094 Eed:240801 Ind ID:217290421 Ind Name: Hamid Ali Khan Trn: 2149321094Tc;$39.35;
+08/02;Orig CO Name: Txworkforcecomm Orig ID:2146000320 Desc Date:240801 CO Entry Descr:Debit Sec:CCD ace#:021000027593199 Eed:240802 Ind ID: (512)463-2325 Ind Name:Twc-156178926 Twc Ui Tax Trn: 2157593199Tc;228.03;
+08/02;Orig CO Name: Sawyer Orig ID: 1800948598 Desc Date: CO Entry Descr: Sawyertoolsec:CC Trace#:091000014820834 Eed:240802 Ind ID:St-C4L1R7D9W9O3 Ind Name:M Hamid Ali Khan Trn: 2154820834Tc;1.03;
+08/05;Orig CO Name: 1St Natl Bk Omah Orig ID:8104000010 Desc Date:240805 CO Entry Descr:Online Pmtsec: Web Trace#: 104000015793938 Eed:240805 Ind D:3D397E54Ed28F3 Ind Name:Mirhamid Alikhan Credit Card Pmt Trn: 2185793938Tc;1,500.00;
+08/05;Orig CO Name:Barclaycard US Orig ID:2510407970 Desc Date: CO Entry Descr:Creditcardsec:Web ace#:026002575859198 Eed:240805 Ind ID:1157967193 Ind Name:Mir Hamid Ali Khan Trn: 2185859198Tc;1,500.00;
+08/05;Orig CO Name: Paypal Orig ID: Paypalsi77 Desc Date:240805 CO Entry Descr:Inst Xfer Sec: Web Trace#:021000021784669 Eed:240805 Ind ID:Stealthmode Ind Name:Animation And Robotics 240805Ppz1Ya Trn: 2181784669Tc;123.95;
+08/06;Orig CO Name: First Home Bank Orig ID:593526917 Desc Date: CO Entry Descr:S Ln Pmtsec: PPD Trace#:063114552483790 Eed:240806 Ind ID: Ind Name:Animation And Robotics Trn: 2192483790Tc;1,700.77;
+08/06;Orig CO Name: Pcrinvestment-SI Orig ID:9000327993 Desc Date:080624 CO Entry Descr:Sigonfile Sec:CCD Trace#: 111924687241780 Eed:240806 Ind ID:7K9Nvg Ind Name: Animation And Robotics 805-699-2040 Trn: 2197241780Tc;8,478.00;
+08/06;Orig CO Name:Paypal Orig :Paypalsi77 Desc Date:240806 CO Entry Descr:Inst Xfer Sec: Web Trace#:021000026687239 Eed:240806 Ind ID:Godaddy.Com Ind Name:Animation And Robotics 240806Ppza9A Trn: 2196687239Tc;76.62;
+08/09;Orig CO Name:Irs Orig ID:3387702000 Desc Date:080924 CO Entry Descr:Usataxpymtsec:CCD Trace#:061036016732065 Eed:240809 Ind ID:227462266080767 Ind Name:Animation And Robotics Trn: 2226732065Tc;6,701.94;
+08/09;Orig CO Name:Intuit 36227082 Orig ID:4462800242 Desc Date:240809 CO Entry Descr:Payroll Sec:CCD Trace#: 111000020127096 Eed:240809 Ind ID:8933349 Ind ame:Animation And Robotics Trn: 2220127096Tc;1,929.44;
+08/09;Orig CO Name:Intuit 36007116 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr:Payroll Sec:CCD Trace#: 111000020152647 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220152647Tc;1,885.59;
+08/09;Orig CO Name:Intuit 36227082 Orig ID:4462800242 Desc Date:240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020127091 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220127091Tc;1,833.43;
+08/09;Orig CO Name:Intuit 36329755 Orig ID:4462800242 Desc Date:240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020140713 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220140713Tc;1,755.62;
+08/09;Orig CO Name:Intuit 36245178 Orig ID:4462800242 Desc Date:240809 CO Entry Descr:Payroll Sec: CCD Trace#: 111000020137409 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220137409Tc;1,643.13;
+08/09;Orig CO Name:Intuit 36284657 Orig ID:4462800242 Desc Date:240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020132029 Eed:240809 Ind ID:8933349 Ind Name: Animation And Robotics Trn: 2220132029Tc;1,461.14;
+08/09;Orig CO Name:Intuit 36245178 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020137408 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220137408Tc;1,297.63;
+08/09;Orig CO Name:Intuit 36294649 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec: CCD Trace#: 111000020154507 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220154507Tc;1,255.96;
+Page 4 of 10
+
+Page 5
+CHASE
+August 01, 2024 through August 30, 2024
+Account Number:: 000000912093783
+ELECTRONIC WITHDRAWALS
+(continued)
+DATE;DESCRIPTION;AMOUNT;
+08/09;Orig CO Name:Intuit 36284657 Orig ID:4462800242 Desc Date:240809 CO Entry Descr:Payroll Sec:CCD Trace#: 111000020132031 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220132031Tc;947.38;
+08/09;Orig CO Name:Intuit 36284657 Orig ID:4462800242 Desc Date:240809 CO Entry Descr:Payroll Sec:CCD Trace#: 111000020132028 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220132028Tc;895.13;
+08/09;Orig CO Name:Intuit 36227082 Orig ID:4462800242 Desc Date:240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020127094 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220127094Tc;886.85;
+08/09;Orig CO Name:Intuit 36284657 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr:Payroll Sec:CCD Trace#: 111000020132030 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220132030Tc;846.71;
+08/09;Orig CO Name:Intuit 36227082 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr:Payroll Sec:CCD Trace#: 111000020127095 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220127095Tc;845.03;
+08/09;Orig CO Name:Intuit 36227082 Orig ID:4462800242 Desc Date:240809 CO Entry Descr:Payroll Sec:CCD Trace#: 111000020127093 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220127093Tc;795.52;
+08/09;Orig CO Name:Intuit 36329755 Orig ID:4462800242 Desc 240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020140715 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220140715Tc;782.48;
+08/09;Orig CO Name:Intuit 32460933 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec: CCD Trace#: 111000020145933 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220145933Tc;777.13;
+08/09;Orig CO Name:Irs Orig ID:3387702000 Desc Date:080924 CO Entry Descr:Usataxpymtsec:CCD Trace#:061036016732064 Eed:240809 Ind ID:227462266080741 Ind Name:Animation And Robotics Trn: 2226732064Tc;545.84;
+08/09;Orig CO Name:Intuit 36294649 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020154508 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220154508Tc;288.12;
+08/09;Orig CO Name:Intuit 36329755 Orig ID:4462800242 Desc 240809 CO Entry Descr:Payroll Sec:CCD Trace#: 111000020140714 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220140714Tc;203.17;
+08/09;Orig CO Name:Intuit 36227082 Orig ID:4462800242 Desc Date:240809 CO Entry Descr:Payroll Sec:CCD Trace#: 111000020127092 Eed:240809 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2220127092Tc;184.70;
+08/09;Orig CO Name:Intuit 13715245 Orig ID:9215986202 Desc Date:240809 CO Entry Descr:Tran Fee Sec:CCD Trace#:021000022423256 Eed:240809 Ind D:524771996127012 Ind Name:Animation And Robotics Trn: 2222423256Tc;444.92;
+08/13;Orig CO Name:Discover Orig ID:2510020270 Desc Date:240812 CO Entry Descr:E-Payment Sec:Web Trace#:091000019736768 Eed:240813 Ind ID:1739 Ind Name:Alikhan Mir DC Pymnts Dciintnet Trn: 2269736768Tc;1,500.00;
+08/13;Orig CO Name:Intuit 96887393 Orig ID:9215986202 Desc Date:240813 CO Entry Descr: Tran Fee Sec:CCD Trace#:021000020299030 Eed:240813 Ind D:524771996127012 Ind Name:Animation And Robotics Trn: 2260299030Tc;459.26;
+08/15;Orig CO Name:Paypal Orig ID:Paypalsi77 Desc Date:240815 CO Entry Descr:Inst Xfer Sec:Web Trace#:021000024431385 Eed:240815 Ind ID:Uber Eats Ind Name:Animation And Robotics 240815Ppz9J1 Trn: 2284431385Tc;97.40;
+08/19;Orig CO Name: Tab Bank Orig ID:1870571941 Desc Date:240815 CO Entry Descr:Loanpmt Sec:PPD Trace#:124384659637807 Eed:240819 Ind ID: Ind Name:Animation And R Trn: 2329637807Tc;1,980.13;
+08/20;Orig CO Name:Intuit 37131562 Orig ID:4462800242 Desc Date:240820 CO Entry Descr:Payroll Sec:CCD Trace#: 111000028499216 Eed:240820 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2338499216Tc;907.34;
+08/20;Orig CO Name: Wells Fargo Card Orig ID:3411650794 Desc Date: 081924 CO Entry Descr:Ccpymt Sec:Web Trace#:091000013915637 Eed:240820 Ind ID:90154576720494 Ind Name:Alikhan Mirhamid Trn: 2333915637Tc;1,500.00;
+13507700503000000065
+Page 5 of 10
+
+Page 6
+CHASE
+August 01, 2024 through August 30, 2024
+Account Number:: 000000912093783
+ELECTRONIC WITHDRAWALS
+(continued)
+DATE;DESCRIPTION;;AMOUNT;
+08/22;Orig CO Name:Sawyer Descr:Sawyertoolsec:CCD ID:St-S3G1D7R8S2B6;Orig ID: 1800948598 Desc Date: CO Entry Trace#:091000013192023 Eed:240822 Ind Ind Name:Mi Hamid Ali Khan Trn: 2353192023Tc;50.01;
+08/23;Orig CO Name:Intuit 37131586 Descr:Payroll Sec:CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date: 240823 CO Entry Trace#: 111000027365087 Eed:240823 Ind ID:8933349 Robotics Trn: 2367365087Tc;1,929.44;
+08/23;Orig CO Name:Intuit 37454297 Descr: Payroll Sec:CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date:240823 CO Entry Trace#: 111000027382208 Eed:240823 Ind ID:8933349 Robotics Trn: 2367382208Tc;1,743.57;
+08/23;Orig CO Name:Intuit 37131586 Descr:Payroll Sec:CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date:240823 CO Entry Trace#: 111000027365086 Eed:240823 Ind ID:8933349 Robotics Trn: 2367365086Tc;1,656.52;
+08/23;Orig CO Name:Intuit 37454297 Payroll Sec:CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date: 240823 CO Entry Trace#: 111000027382204 Eed:240823 Ind ID:8933349 Robotics Trn: 2367382204Tc;1,455.12;
+08/23;Orig CO Name:Intuit 37131586 Descr: Payroll Sec: CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date: 240823 CO Entry Trace#: 111000027365085 Eed:240823 Ind ID:8933349 Robotics Trn: 2367365085Tc;1,255.96;
+08/23;Orig CO Name:Intuit 37385824 Descr: Payroll Sec: CCD Ind Name:Animation And;Orig ID:4462800242 Desc 240823 CO Entry Trace#: 111000027389322 Eed:240823 Ind ID:8933349 Robotics Trn: 2367389322Tc;1,015.88;
+08/23;Orig CO Name:Intuit 37131586 Descr: Payroll Sec:CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date: 240823 CO Entry Trace#: 111000027365088 Eed:240823 Ind ID:8933349 Robotics Trn: 2367365088Tc;910.80;
+08/23;Orig CO Name:Intuit 37385824 Descr: Payroll Sec: CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date: 240823 CO Entry Trace#: 111000027389327 Eed:240823 Ind ID:8933349 Robotics Trn: 2367389327Tc;910.80;
+08/23;Orig CO Name:Intuit 37410056 Descr: Payroll Sec: CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date: 240823 CO Entry Trace#: 111000027362130 Eed:240823 Ind ID:8933349 Robotics Trn: 2367362130Tc;909.53;
+08/23;Orig CO Name:Intuit 37454297 Descr:Payroll Sec: CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date:240823 CO Entry Trace#: 111000027382207 Eed:240823 Ind ID:8933349 Robotics Trn: 2367382207Tc;775.89;
+08/23;Orig CO Name:Intuit 37385824 Descr:Payroll Sec:CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date:240823 CO Entry Trace#: 111000027389326 Eed:240823 Ind ID:8933349 Robotics Trn: 2367389326Tc;728.27;
+08/23;Orig CO Name:Intuit 37385824 Descr:Payroll Sec:CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date:240823 CO Entry Trace#: 111000027389324 Eed:240823 Ind ID:8933349 Robotics Trn: 2367389324Tc;578.04;
+08/23;Orig CO Name:Intuit 37454297 Descr:Payroll Sec:CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date:240823 CO Entry Trace#: 111000027382205 Eed:240823 Ind ID:8933349 Robotics Trn: 2367382205Tc;504.10;
+08/23;Orig CO Name:Intuit 37385824 Descr: Payroll Sec:CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date:240823 CO Entry Trace#: 111000027389323 Eed:240823 Ind ID:8933349 Robotics Trn: 2367389323Tc;492.23;
+08/23;Orig CO Name:Intuit 37385824 Descr:Payroll Sec:CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date: 240823 CO Entry Trace#: 111000027389325 Eed:240823 Ind ID:8933349 Robotics Trn: 2367389325Tc;203.17;
+08/23;Orig CO Name:Intuit 37454297 Descr: Payroll Sec:CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date: 240823 CO Entry Trace#: 111000027382203 Eed:240823 Ind ID:8933349 Robotics Trn: 2367382203Tc;126.98;
+08/23;Orig CO Name:Intuit 37454297 Descr: Payroll Sec: CCD Ind Name:Animation And;Orig ID:4462800242 Desc Date: 240823 CO Entry Trace#: 111000027382206 Eed:240823 Ind ID:8933349 Robotics Trn: 2367382206Tc;110.82;
+Descr:Payroll Sec:CCD Trace#: 111000027365087 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367365087Tc
+Descr: Payroll Sec:CCD Trace#: 111000027382208 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367382208Tc
+Descr:Payroll Sec:CCD Trace#: 111000027365086 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367365086Tc
+Payroll Sec:CCD Trace#: 111000027382204 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367382204Tc
+Descr: Payroll Sec: CCD Trace#: 111000027365085 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367365085Tc
+Descr: Payroll Sec: CCD Trace#: 111000027389322 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367389322Tc
+Descr: Payroll Sec:CCD Trace#: 111000027365088 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367365088Tc
+Descr: Payroll Sec: CCD Trace#: 111000027389327 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367389327Tc
+Descr: Payroll Sec: CCD Trace#: 111000027362130 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367362130Tc
+Descr:Payroll Sec: CCD Trace#: 111000027382207 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367382207Tc
+Descr:Payroll Sec:CCD Trace#: 111000027389326 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367389326Tc
+Descr:Payroll Sec:CCD Trace#: 111000027389324 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367389324Tc
+Descr:Payroll Sec:CCD Trace#: 111000027382205 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367382205Tc
+Descr: Payroll Sec:CCD Trace#: 111000027389323 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367389323Tc
+Descr:Payroll Sec:CCD Trace#: 111000027389325 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367389325Tc
+Descr: Payroll Sec:CCD Trace#: 111000027382203 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367382203Tc
+Descr: Payroll Sec: CCD Trace#: 111000027382206 Eed:240823 Ind ID:8933349
+Ind Name:Animation And Robotics Trn: 2367382206Tc
+Page 6 of 10
+
+Page 7
+CHASE
+August 01, 2024 through August 30, 2024
+Account Number: 000000912093783
+ELECTRONIC WITHDRAWALS
+(continued)
+DATE;DESCRIPTION;AMOUNT;
+08/27;Orig CO Name:Intuit 37651681 Orig ID:4462800242 Desc Date:240827 CO Entry Descr:Payroll Sec:CCD Trace#: 111000029914310 Eed:240827 Ind ID:8933349 Ind Name:Animation And Robotics Trn: 2409914310Tc;295.52;
+08/28;Orig CO Name:Mbfs.Com Orig ID:1850860002 Desc Date:240828 CO Entry Descr:Auto Pay Sec:Web race#:021000024815796 Eed:240828 Ind ID:5002117665 Ind Name:Mir Hamid Ali Khan Trn: 2414815796Tc;631.67;
+08/30;Orig CO Name:Paypal Orig D:Paypalsi77 Desc Date:240830 CO Entry Descr:Inst Xfer Sec:Web Trace#:021000027672834 Eed:240830 Ind ID:Apexexpertl Ape Ind Name:Animation And Robotics 240830Ppz9D9 Trn: 2437672834Tc;108.25;
+Total;Electronic Withdrawals;$64,691.31;
+13507700504000000065
+OTHER WITHDRAWALS
+DATE;DESCRIPTION;AMOUNT;
+08/02;08/02 Withdrawal;$8,500.00;
+08/14;08/14 Withdrawal;8,600.00;
+Total;Other Withdrawals;$17,100.00;
+DAILY ENDING BALANCE
+DATE;AMOUNT;DATE;AMOUNT;DATE;AMOUNT;
+08/01;$38,463.37;08/13;27,155.11;08/22;23,024.08;
+08/02;29,954.31;08/14;19,613.76;08/23;7,858.92;
+08/05;38,840.69;08/15;20,490.16;08/26;7,814.53;
+08/06;29,626.88;08/16;20,945.75;08/27;8,031.29;
+08/07;33,523.16;08/19;19,946.06;08/28;8,422.65;
+08/08;34,697.31;08/20;18,683.96;08/29;9,339.83;
+08/09;21,692.99;08/21;19,834.09;08/30;9,318.36;
+08/12;21,971.08;;;;;
+IN CASE OF ERRORS OR QUESTIONS ABOUT YOUR ELECTRONIC FUNDS TRANSFERS:
+Call us at 1-866-564-2262 or write us at the address on the front of this statement immediately if you think your statement or receipt is incorrect or if
+you need more information about a transfer listed on the statement or receipt.
+For personal accounts only: We must hear from you no later than 60 days after we sent you the FIRST statement on which the problem or error
+appeared. Be prepared to give us the following information:
+Your name and account number;
+A description of the error or the transaction you are unsure about, and why you think it is an error or want more information; and
+The amount of the suspected error.
+We will investigate your complaint and will correct any error promptly. If we take more than 10 business days (or 20 business days for new
+accounts) to do this, we will credit your account for the amount you think is in error so that you will have use of the money during the time it takes
+us to complete our investigation.
+For business accounts, see your deposit account agreement or other applicable agreements that govern your account for details.
+IN CASE OF ERRORS OR QUESTIONS ABOUT NON-ELECTRONIC FUNDS TRANSFERS: Contact us immediately if your statement is
+incorrect or if you need more information about any non-electronic funds transfers on this statement. For more details, see your deposit account
+agreement or other applicable agreements that govern your account.
+JPMorgan Chase Bank, N.A. Member FDIC
+Page 7 of 10
+
+Page 8
+CHASE
+August 01, 2024 through August 30, 2024
+Account Number:: 000000912093783
+The following are excerpts of the more significant updates to Section X. Arbitration; Resolving
+Disputes to be published November 17, 2024:
+;What claims or disputes subject to arbitration?: Claims or disputed factual or legal issues that arise out of or in any way relate in any way to any aspect of our relationship or interactions with each other, including but not limited to your deposit account, transactions involving your deposit account, whether actual, potential, canceled, or other transactions, any related product, service, or agreement with, or interactions of any kind with Chase employees are subject to arbitration.;
+;Can I (customer) cancel or opt out of this agreement to arbitrate?: You have the right to opt out of this agreement to arbitration if you tell us within sixty (60) days of opening your account, or by January 16, 2025, whichever is later. The exclusive way to opt out is by calling us at 1-800-242-7338. Any other method, form, or means of opting out will be treated as invalid or ineffective. Requests to opt out made more than sixty (60) days after opening your account or by January 16, 2025, whichever is later will be invalid.;
+;Does arbitration apply to Claims involving third parties?: For purposes of arbitration, "you" includes any person who is listed on your account or claims a right or interest in your account, and "we" and "us" includes JPMorgan Chase Bank, N.A., all its affiliates, third-party beneficiaries of this agreement and all third parties who are regarded as agents or representatives of ours in connection with a Claim.;
+;How does arbitration work?: Arbitration between us shall be administered by the American Arbitration Association ("AAA"), which will apply it Consumer Arbitration Rules in effect at the time the arbitration is commenced and the Mass Arbitration Supplementary Rules to mass arbitration matters. A single arbitrator shall conduct proceedings under the Consumer Arbitration Rules, and a Process Arbitrator and single Merits Arbitrator shall conduct each mass arbitration case. The Parties agree that, upon motion by either of us, the arbitrator or Merits Arbitrator shall have the power to decide dispositive issues of law prior to hearing, consistent with Federal Rules of Civil Procedure 12 and 56. All pleadings, information and documents exchanged, and the arbitrator's ruling shall be treated as confidential and have no precedential value. However, if either Party seeks to confirm the arbitrator's decision in court, the Parties agree that the documents necessary for such confirmation need not be filed under seal. Who will pay for costs?: Each Party will be responsible for the arbitration costs as allocated by the applicable AAA rules (www.adr.org). However, except for claims filed as part of a mass arbitration, if the arbitrator ultimately rules in your favor, you will be entitled to reimbursement by Chase for all fees you paid to the AAA. NEW SECTION: What about mass arbitration matters?: You agree that these additional requirements ("Mass Arbitration Procedures") shall apply to your Claim if it is filed as part of a "mass arbitration," which means twenty-five (25) or more arbitration claims involving the same or similar subject matter and/or issues of law or fact, and where representation of all claimants is the same or coordinated across the cases. You agree to these procedures even though they may delay the arbitration of your individual claim. If at any point you are unsatisfied with the speed by which your matter is proceeding, you are free to withdraw your arbitration demand and proceed in small claims court if the Claim is in that court's jurisdiction and proceeds on an individual basis.;
+;1. Mass Arbitration Filing Requirements: In addition to the requirements set forth in the AAA Mass Arbitration Supplementary Rules, you agree that upon commencing a case with the AAA, you will provide your name, full Chase account number, mailing address, telephone number, email address, a factual description of every disputed transaction for which you seek compensation (date, amount, and transaction type) and/or event (date, location, and individuals involved), explanation of the basis of your Claim, an itemized calculation of all alleged damages, and, if represented by counsel, a signed statement authorizing us to share information regarding your account and the Claim with them. You agree and understand that failure to provide this information may result in dismissal of your Claim, though you have the right to refile once you provide the information described in the previous sentence.;
+;2. Process Arbitrator Appointment: You and Chase agree that before an arbitrator is assigned to determine the merit of your claim, a "Process Arbitrator" will be appointed. The Process Arbitrator will have the authority to ensure these Mass Arbitration Procedures and the AAA rules are followed. The Parties agree that the Process Arbitrator will be selected by the process set forth in AAA Mass Arbitration Supplementary Rule MA-7(a). In short, each Party will receive a list of proposed Process Arbitrators provided by the AAA and will meet and confer to identify a mutually-agreeable candidate. If the Parties cannot agree, they will submit their preferences to the AAA, and the AAA will select a Process Arbitrator.;
+Page 8 of 10
+
+Page 9
+CHASE
+August 01, 2024 through August 30, 2024
+Account Number: 000000912093783
+3. Matters To Be Decided by a Process Arbitrator:
+;;
+;In addition to the authority outlined in AAA Mass Arbitration Supplementary Rules, the parties agree that the Process Arbitrator shall be empowered to resolve any dispute regarding whether your Claim should be dismissed because, for example, you failed to comply with the Mass Arbitration Filing Requirements, any other requirements outlined in this agreement, or any other reason. You agree that if the Process Arbitrator finds you failed to comply with any requirement, your claim will be dismissed, without prejudice to refiling once the deficiencies are remedied. The Process Arbitrator will also have the power to decide whether, based on the information submitted in the Mass Arbitration Filing Requirements, other threshold eligibility issues for your case to proceed, including but not limited to whether you had an account at Chase, experienced the transaction, fee, or event at issue, or otherwise cannot pursue the claim due to a clear legal or factual deficiency, and to dismiss your claim as appropriate. The Process Arbitrator shall have the power to determine whether or not a given dispute regarding these Mass Arbitration Filing Requirements and/or Procedures are within their jurisdiction. The Process Arbitrator shall be authorized to afford any relief or impose any sanctions available under Federal Rule of Civil Procedure 11, 28 U.S.C. § 1927, or any applicable state law.;
+4.;Mass Arbitration Procedures: Following the resolution of any disputes within the jurisdiction of the Process Arbitrator, if any, counsel for the claimants and counsel for Chase shall each select fifteen (15) cases (per side) to proceed first in individual arbitration proceedings on the merits of each claim. Unless the Parties otherwise agree, in no event shall any individual Merits Arbitrator be assigned more than three (3) cases. No AAA per case fee shall be assessed in connection with any case until they are selected to proceed to individual arbitration proceedings as part of the process identified in this section. The Parties agree that each side shall have the right to have fifteen (15) cases of their choosing proceed to final hearing before the process described in this section moves forward. After the first thirty (30) cases are resolved, counsel will meet and confer regarding ways to improve the efficiency of the proceedings, including whether to mediate or change the number of cases filed in each stage. If the Parties are unable to resolve the remaining cases after the conclusion of the initial thirty (30) proceedings and conferring in good faith, each side shall select another fifteen (15) cases (per side) to proceed to individual arbitration proceedings. Each of these thirty (30) cases shall be assigned to a different Merits Arbitrator, though if the Parties otherwise agree, a single Merits Arbitrator may be assigned up to three (3) cases. No AAA per case fee shall be assessed in connection with the remaining cases until they are selected to proceed to individual arbitration proceedings as part of the process identified in this section. After this second set of thirty (30) cases are resolved, counsel will again meet and confer regarding ways to improve the efficiency of the proceedings, including whether to mediate or change the number of cases filed in each stage. If the Parties do not reach a global resolution after the second set of cases are resolved, on either Party's motion, the Process Arbitrator can decide to expedite the proceedings by forgoing more rounds of case selection and instead assigning Merits Arbitrators to all of the remaining cases at once. If no motion is made, this Mass Arbitration Procedure shall continue with thirty (30) cases in each set of proceedings, consistent with the parameters identified above. You and Chase agree to engage in these Mass Arbitration Procedures in good faith, which includes an agreement to pay the Parties' respective case fee if your case is selected. Any dispute regarding any aspect of the specific Mass Arbitration Procedures outlined in this section shall be resolved by the Process Arbitrator.;
+5.;Interpretation and Enforcement of Mass Arbitration Provision:;
+;Any dispute regarding the interpretation or enforcement of these mass arbitration procedures shall be decided by the Process Arbitrator or, in cases that have been released to merits proceedings, the Merits Arbitrator. Their decisions regarding the mass arbitrations process and procedures shall be considered interlocutory in nature and not subject to immediate judicial review. If any terms of these Mass Arbitration Procedures are found to be legally unenforceable for any reason, then the proceedings shall otherwise continue in arbitration in accordance with AAA's Mass Arbitration Supplementary rules.;
+13507700505000000065
+Page 9 of 10
+
+Page 10
+CHASE
+August 01, 2024 through August 30, 2024
+Account Number: 000000912093783
+This Page Intentionally Left Blank
+Page 10 of 10

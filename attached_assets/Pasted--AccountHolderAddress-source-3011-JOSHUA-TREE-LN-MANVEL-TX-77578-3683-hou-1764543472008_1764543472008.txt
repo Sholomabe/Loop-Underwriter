@@ -1,0 +1,567 @@
+{
+  "AccountHolderAddress": {
+    "_source": "3011 JOSHUA TREE LN MANVEL TX 77578-3683",
+    "houseNumber": "3011",
+    "road": "JOSHUA TREE LN",
+    "postalCode": "77578-3683",
+    "city": "MANVEL",
+    "state": "TX",
+    "streetAddress": "3011 JOSHUA TREE LN"
+  },
+  "AccountHolderName": "ANIMATION",
+  "Accounts": [
+    {
+      "_source": "",
+      "AccountNumber": "000000912093783",
+      "AccountType": "Chase Business Complete Checking",
+      "BeginningBalance": 37495.84,
+      "EndingBalance": 9318.36,
+      "Transactions": [
+        {
+          "_source": "",
+          "Date": "2024-08-01",
+          "Description": "Orig CO Name: Sawyer\nDescr: Sawyertoolsec: CCD\nOrig ID:4270465600 Desc Date: CO Entry\nTrace#: 111000020645761 Eed:240801 Ind ID:St-BOP9M6M7J5F6 Ind Name: Mir Hamid Ali Khan Trn: 2140645761Tc",
+          "DepositAmount": 1006.88
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-02",
+          "Description": "Deposit 2030145549",
+          "DepositAmount": 220
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-05",
+          "Description": "Orig CO Name: Sawyer\nDescr: Sawyertoolsec: CCD\nOrig ID:4270465600 Desc Date: CO Entry\nID: St-D7V1C6T1 A3X2 Trace#:111000026098673 Eed:240805 Ind Ind Name: Mir Hamid Ali Khan Trn: 2186098673Tc",
+          "DepositAmount": 11770.33
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-05",
+          "Description": "Wire Reversal B/O: JPMorgan Chase Bank National Columbus OH 43240 US Org: Ts Fx Retail Inv Ref:/Bnf/Our Ref Jpv240722-002976 Trn: 6241100218Hh",
+          "DepositAmount": 240
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-06",
+          "Description": "Orig CO Name: Sawyer Orig ID:4270465600 Desc Date: CO Entry Descr: Sawyertoolsec: CCD ID:St-L6T5T1T2U0E8 Trace#:111000025777827 Eed:240806 Ind Ind Name: Mir Hamid Ali Khan Trn: 2195777827Tc",
+          "DepositAmount": 1291.58
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-07",
+          "Description": "Orig CO Name: Sawyer\nOrig ID:4270465600 Desc Date:\nDescr: Sawyertoolsec: CCD\nCO Entry ID: St-P8Y7J8G6W9F7 Trace#:111000023928616 Eed:240807 Ind Ind Name: Mir Hamid Ali Khan Trn: 2203928616Tc",
+          "WithdrawalAmount": 4075.28
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-08",
+          "Description": "Orig CO Name: Sawyer Descr: Sawyertoolsec: CCD Orig ID:4270465600 Desc Date: Trace#: 111000024398203 Eed:240808 Ind CO Entry ID:St-F4U30604W1 X0 Ind Name: Mir Hamid Ali Khan Trn: 2214398203Tc",
+          "WithdrawalAmount": 1174.15
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "Description": "Orig CO Name:Intuit 98175455 Orig ID:9215986202 Desc Date: 240809 CO Entry Descr: Deposit Sec: CCD ID:524771996127012 Trace#: 021000022513829 Eed:240809 Ind Ind Name: Animation And Robotics Trn: 2222513829Tc",
+          "WithdrawalAmount": 14880
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "Description": "Orig CO Name: Sawyer Descr: Sawyertoolsec: CCD\nOrig ID:4270465600 Desc Date:\nTrace#:111000026818176 Eed:240809\nCO Entry Ind ID:St-K7M4V6R9E8A9 Ind Name: Mir Hamid Ali Khan Trn: 2226818176Tc",
+          "WithdrawalAmount": 322.54
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-12",
+          "Description": "Orig CO Name:Sawyer\nDescr: Sawyertoolsec: CCD\nOrig ID:4270465600 Desc Date:\nTrace#:111000021960146 Eed:240812 Ind CO Entry ID:St-C4TOW4A4O4S7 Ind Name: Mir Hamid Ali Khan Trn: 2251960146Tc",
+          "WithdrawalAmount": 310.51
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-13",
+          "Description": "Orig CO Name:Intuit 73467513 Orig ID:9215986202 Desc Date: 240813 CO Entry Descr: Deposit Sec: CCD ID:524771996127012 Trace#:021000020310210 Eed:240813 Ind Ind Name: Animation And Robotics Trn: 2260310210Tc",
+          "WithdrawalAmount": 15360
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-13",
+          "Description": "Orig CO Name: Sawyer Descr: Sawyertoolsec: CCD Orig ID:4270465600 Desc Date: Trace#: 111000025237362 Eed:240813 Ind CO Entry ID:St-C016U6R8F5H2 Ind Name: Mir Hamid Ali Khan Trn: 2265237362Tc",
+          "WithdrawalAmount": 265.37
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-14",
+          "Description": "Orig CO Name: Sawyer Descr: Sawyertoolsec: CCD\nOrig ID:4270465600 Desc Date:\nTrace#:111000021560110 Eed:240814 Ind\nCO Entry ID:St-X8D7E9D6W1L8 Ind Name: Mir Hamid Ali Khan Trn: 2271560110Tc",
+          "WithdrawalAmount": 1058.65
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-15",
+          "Description": "Orig CO Name: Sawyer\nDescr: Sawyertoolsec: CCD\nOrig ID:4270465600 Desc Date: CO Entry\nID: St-G7J8M5A6Q2D8 Trace#: 111000027825578 Eed:240815 Ind Ind Name: Mir Hamid Ali Khan Trn: 2287825578Tc",
+          "WithdrawalAmount": 973.8
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-16",
+          "Description": "Orig CO Name: Sawyer Descr: Sawyertoolsec: CCD Orig ID:4270465600 Desc Date: Trace#: 111000027401745 Eed:240816 CO Entry Ind ID: St-B3P9H8B4Z9U0 Ind Name: Mir Hamid Ali Khan Trn: 2297401745Tc",
+          "WithdrawalAmount": 455.59
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-19",
+          "Description": "Orig CO Name: Sawyer\nDescr: Sawyertoolsec: CCD\nOrig ID:4270465600 Desc Date: CO Entry\nTrace#:111000026459549 Eed:240819 Ind ID: St-D6W4S4K8X7N1 Ind Name: Mir Hamid Ali Khan Tm: 2326459549Tc",
+          "DepositAmount": 980.44
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-20",
+          "Description": "Orig CO Name: Sawyer Orig ID:4270465600 Desc Date: CO Entry Descr: Sawyertoolsec: CCD ID:St-ZOS7D1 V3R4Z5 Trace#:111000023946907 Eed:240820 Ind Ind Name: Mir Hamid Ali Khan Tm: 2333946907Tc",
+          "DepositAmount": 1145.24
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-21",
+          "Description": "Orig CO Name: Sawyer Orig ID:4270465600 Desc Date: CO Entry Descr: Sawyertoolsec: CCD Ind ID:St-V1X7F5V6O8D2 Trace#: 111000028504564 Eed:240821 Ind Name: Mir Hamid Ali Khan Tm: 2348504564Tc",
+          "DepositAmount": 1150.13
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-22",
+          "Description": "ATM Check Deposit 08/22 10611 Broadway St Pearland TX Card 5494",
+          "DepositAmount": 3240
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "Description": "Orig CO Name: Sawyer Orig ID:4270465600 Desc Date: CO Entry Descr: Sawyertoolsec: CCD ID: St-V9C1V9Q3Q7D9 Trace#:111000021409329 Eed:240823 Ind Ind Name: Mir Hamid Ali Khan Trn: 2361409329Tc",
+          "DepositAmount": 141.96
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-26",
+          "Description": "Orig CO Name: Sawyer Orig ID:4270465600 Desc Date: CO Entry Descr: Sawyertoolsec: CCD ID:St-SOP1J5L7N3B2 Trace#: 111000023455367 Eed:240826 Ind Ind Name: Mir Hamid Ali Khan Trn: 2393455367Tc",
+          "DepositAmount": 55.29
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-27",
+          "Description": "Orig CO Name: Sawyer Descr: Sawyertoolsec: CCD ID:St-F2F5W7A7F6F5\nOrig ID:4270465600 Desc Date: CO Entry Trace#:111000026692107 Eed:240827 Ind Ind Name: Mir Hamid Ali Khan Trn: 2406692107Tc",
+          "DepositAmount": 512.28
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-28",
+          "Description": "Orig CO Name: Sawyer Descr: Sawyertoolsec: CCD ID:St-ZOW2B3G1 J9P5\nOrig ID:4270465600 Desc Date: CO Entry Trace#:111000022029232 Eed:240828 Ind Ind Name: Mir Hamid Ali Khan Trn: 2412029232Tc",
+          "DepositAmount": 1268.62
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-29",
+          "Description": "Orig CO Name: Sawyer Descr: Sawyertoolsec: CCD ID: St-C3G8M3L2R8Z7\nOrig ID:4270465600 Desc Date: CO Entry Trace#:111000027696213 Eed:240829 Ind Ind Name: Mir Hamid Ali Khan Tm: 2427696213Tc",
+          "DepositAmount": 917.18
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-30",
+          "Description": "Orig CO Name: Sawyer Descr: Sawyertoolsec: CCD ID: St-B5POL3WOM207\nOrig ID:4270465600 Desc Date: CO Entry Trace#:111000023510910 Eed:240830 Ind Ind Name: Mir Hamid Ali Khan Trn: 2433510910Tc",
+          "DepositAmount": 86.78
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-07",
+          "Description": "Recurring Card Purchase 08/06 Sawyer Httpswww.Hisa MI Card 5494",
+          "WithdrawalAmount": 179
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-12",
+          "Description": "Card Purchase 08/09 Smith Thompson Home S 972-526-8500 TX Card 5494",
+          "WithdrawalAmount": 32.42
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-13",
+          "Description": "Card Purchase 08/12 Constellation Energy 215-841-5027 IL Card 5494",
+          "WithdrawalAmount": 586.74
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-13",
+          "Description": "Card Purchase 08/12 Amazon. Com*Rm1Gx5942 Amzn.Com/Bill WA Card 5494",
+          "WithdrawalAmount": 63.8
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-13",
+          "Description": "Card Purchase 08/13 Amazon Mktpl*Rm0Qq5U Amzn.Com/Bill WA Card 5494",
+          "WithdrawalAmount": 85.38
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-26",
+          "Description": "Card Purchase 08/24 Amazon. Com*R496Z0Xs1 Amzn. Com/Bill WA Card 5494",
+          "WithdrawalAmount": 77.49
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-26",
+          "Description": "Card Purchase 08/25 Amazon Mktpl*Rk6K21O Amzn.Com/Bill WA Card 5494",
+          "WithdrawalAmount": 22.19
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-28",
+          "Description": "Recurring Card Purchase 08/28 Intuit *Qbooks Onlin Cl.Intuit. Com CA Card 5494",
+          "WithdrawalAmount": 245.59
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-01",
+          "Description": "Orig CO Name: Headway capital 2 Orig ID: Rep-Enova Desc Date: 240801 CO Entry Descr: D001155622Sec:CCD Trace#: 096016939321094 Eed:240801 Ind ID:217290421 Ind Name: Mir Hamid Ali Khan Trn: 2149321094Tc",
+          "WithdrawalAmount": 39.35
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-02",
+          "Description": "Orig CO Name: Txworkforcecomm Orig ID:2146000320 Desc Date:240801 CO Entry Descr: Debit Sec: CCD Trace#: 021000027593199 Eed:240802 Ind ID: (512)463-2325 Ind Name: Two-156178926 Ui Tax Trn: 2157593199Tc Twc",
+          "WithdrawalAmount": 228.03
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-02",
+          "Description": "Orig CO Name: Sawyer Orig ID:1800948598 Desc Date: CO Entry Descr: Sawyertoolsec: CCD Trace#: 091000014820834 Eed: 240802 Ind ID:St-C4L1R7D9W903 Ind Name: Mir Hamid Ali Khan Trn: 2154820834Tc",
+          "WithdrawalAmount": 1.03
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-05",
+          "Description": "Orig CO Name: 1 St Natl Bk Omah Orig ID: 8104000010 Desc Date: 240805 CO Entry Descr: Online Pmtsec: Web Trace#: 104000015793938 Eed: 240805_Ind ID:3D397E54Ed28F3 Ind Name: Mirhamid Alikhan Card Pmt Trn: 2185793938Tc Credit",
+          "WithdrawalAmount": 1500
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-05",
+          "Description": "Orig CO Name: Barclaycard US Orig ID:2510407970 Desc Date: Descr: Creditcardsec: Web Trace#: 026002575859198 Eed:240805 Ind ID:1157967193 CO Entry Ind Name: Mir Hamid Ali Khan Trn: 2185859198Tc",
+          "WithdrawalAmount": 1500
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-05",
+          "Description": "Orig CO Name: Paypal Orig ID: Paypalsi77 Desc Date:240805 CO Entry Descr:Inst Xfer Sec: Web Trace#:021000021784669 Eed:240805 Ind ID: Stealthmode Ind Name: Animation And Robotics 240805Ppz1Ya Tm: 2181784669Tc",
+          "WithdrawalAmount": 123.95
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-06",
+          "Description": "Orig CO Name: First Home Bank Orig ID:593526917 Desc Date: Ln Pmtsec: PPD Trace#:063114552483790 Eed:240806 Ind ID: CO Entry Descr: Sba Ind Name: Animation And Robotics Trn: 2192483790Tc",
+          "WithdrawalAmount": 1700.77
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-06",
+          "Description": "Orig CO Name:Pcrinvestment-Sl",
+          "WithdrawalAmount": 8478
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-06",
+          "WithdrawalAmount": 76.62
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 6701.94
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 1929.44
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 1885.59
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 1833.43
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 1755.62
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 1643.13
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 1461.14
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 1297.63
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 1255.96
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 947.38
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 895.13
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 886.85
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 846.71
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 845.03
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 795.52
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 782.48
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 777.13
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 545.84
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "WithdrawalAmount": 288.12
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "Description": "Sec:CCD Trace#: 111000020140714 Eed:240809 Ind ID: 8933349 Ind Name: Animation And Robotics Tm: 2220140714Tc",
+          "WithdrawalAmount": 203.17
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "Description": "Orig CO Name: Intuit 36227082 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec: CCD Trace#: 111000020127092 Eed:240809 Ind ID:8933349 Ind Name: Animation And Robotics Tm: 2220127092Tc",
+          "WithdrawalAmount": 184.7
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-09",
+          "Description": "Orig CO Name: Intuit 13715245\nOrig ID:9215986202 Desc Date: 240809 CO Entry\nDescr: Tran Fee Sec: CCD Trace#: 021000022423256 Eed:240809 Ind ID:524771996127012\nInd Name: Animation And Robotics Tm: 2222423256Tc",
+          "WithdrawalAmount": 444.92
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-13",
+          "Description": "Orig CO Name: Discover\nOrig ID:2510020270 Desc Date: 240812 CO Entry\nDescr: E-Payment Sec: Web Trace#:091000019736768 Eed:240813 Ind ID:1739\nInd Name: Alikhan Mir Pymnts Dciintnet Trn: 2269736768Tc DC",
+          "WithdrawalAmount": 1500
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-13",
+          "Description": "Orig CO Name: Intuit 96887393\nOrig ID:9215986202 Desc Date: 240813 CO Entry\nDescr: Tran Fee Sec: CCD Trace#: 021000020299030 Eed:240813 Ind ID:524771996127012\nInd Name: Animation And Robotics Tm: 2260299030Tc",
+          "WithdrawalAmount": 459.26
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-15",
+          "Description": "Orig CO Name: Paypal Orig ID: Paypalsi77 Desc Date:240815 CO Entry Descr:Inst Xfer Sec: Web Trace#:021000024431385 Eed: 240815 Ind ID: Uber Eats Ind Name: Animation And Robotics 240815Ppz9J1 Trn: 2284431385Tc",
+          "WithdrawalAmount": 97.4
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-19",
+          "Description": "Orig CO Name: Tab Bank Orig ID: 1870571941 Desc Date: 240815 CO Entry Descr: Loanpmt Sec: PPD Trace#:124384659637807 Eed:240819 Ind ID: Ind Name: Animation And R Trn: 2329637807Tc",
+          "WithdrawalAmount": 1980.13
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-20",
+          "Description": "Orig CO Name: Intuit 37131562 Orig ID:4462800242 Desc Date: 240820 CO Entry Descr: Payroll Sec: CCD Trace#: 111000028499216 Eed:240820 Ind ID:8933349 Ind Name: Animation And Robotics Tm: 2338499216Tc",
+          "WithdrawalAmount": 907.34
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-20",
+          "Description": "Orig CO Name: Wells Fargo Card Orig ID: 3411650794 Desc Date: 081924 CO Entry Descr: Copymt Sec: Web Trace#:091000013915637 Eed:240820 Ind ID:90154576720494 Ind Name: Alikhan Mirhamid Trn: 2333915637Tc",
+          "WithdrawalAmount": 1500
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-22",
+          "Description": "Orig CO Name: Sawyer Orig ID:1800948598 Desc Date:\nID:St-S3G1D7R8S2B6 Trace#: 091000013192023 Eed:240822 Ind\nCO Entry Descr: Sawyertoolsec: CCD\nInd Name: Mir Hamid Ali Khan Trn: 2353192023Tc",
+          "WithdrawalAmount": 50.01
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "Description": "Orig CO Name: Intuit 37131586\nOrig ID:4462800242 Desc Date: 240823 CO Entry\nDescr: Payroll Sec:CCD Trace#: 111000027365087 Eed:240823 Ind ID:8933349\nInd Name: Animation And Robotics Tm: 2367365087Tc",
+          "WithdrawalAmount": 1929.44
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "Description": "Orig CO Name: Intuit 37454297 Orig ID:4462800242 Desc Date: 240823 CO Entry Descr: Payroll Sec:CCD Trace#: 111000027382208 Eed:240823 Ind ID:8933349 Ind Name: Animation And Robotics",
+          "WithdrawalAmount": 1743.57
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "WithdrawalAmount": 1656.52
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "WithdrawalAmount": 1455.12
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "WithdrawalAmount": 1255.96
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "WithdrawalAmount": 1015.88
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "WithdrawalAmount": 910.8
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "WithdrawalAmount": 910.8
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "WithdrawalAmount": 909.53
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "WithdrawalAmount": 775.89
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "WithdrawalAmount": 728.27
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "WithdrawalAmount": 578.04
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "Description": "111000027382205 Eed:240823 Ind ID: 8933349\nInd Name: Animation And Robotics Tm: 2367382205Tc",
+          "WithdrawalAmount": 504.1
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "Description": "Orig CO Name: Intuit 37385824 Orig ID:4462800242 Desc Date: 240823 CO Entry Descr: Payroll Sec:CCD Trace#: 111000027389323 Eed:240823 Ind ID:8933349 Ind Name: Animation And Robotics Tm: 2367389323Tc",
+          "WithdrawalAmount": 492.23
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "Description": "Orig CO Name: Intuit 37385824\nOrig ID: 4462800242 Desc Date: 240823 CO Entry\nDescr: Payroll Sec:CCD Trace#: 111000027389325 Eed:240823 Ind ID:8933349\nInd Name: Animation And Robotics Tm: 2367389325Tc",
+          "WithdrawalAmount": 203.17
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "Description": "Orig CO Name: Intuit 37454297 Orig ID:4462800242 Desc Date: 240823 CO Entry Descr: Payroll Sec:CCD Trace#: 111000027382203 Eed:240823 Ind ID: 8933349 Ind Name: Animation And Robotics Tm: 2367382203Tc",
+          "WithdrawalAmount": 126.98
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-23",
+          "Description": "Orig CO Name: Intuit 37454297 Orig ID: 4462800242 Desc Date: 240823 CO Entry Descr: Payroll Sec:CCD Trace#: 111000027382206 Eed:240823 Ind ID: 8933349 Ind Name: Animation And Robotics Tm: 2367382206Tc",
+          "WithdrawalAmount": 110.82
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-27",
+          "Description": "Orig CO Name: Intuit 37651681 Orig ID:4462800242 Desc Date: 240827 CO Entry Descr: Payroll Sec:CCD Trace#: 111000029914310 Eed:240827 Ind ID: 8933349 Ind Name: Animation And Robotics Tm: 2409914310Tc",
+          "WithdrawalAmount": 295.52
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-28",
+          "Description": "Orig CO Name: Mbfs. Com Orig ID: 1850860002 Desc Date:240828 CO Entry Descr: Auto Pay Sec: Web Trace#: 021000024815796 Eed:240828 Ind ID:5002117665 Ind Name: Mir Hamid Ali Khan Trn: 2414815796Tc",
+          "WithdrawalAmount": 631.67
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-30",
+          "Description": "Orig CO Name: Paypal Orig ID: Paypalsi77 Desc Date: 240830 CO Entry Descr:Inst Xfer Sec: Web Trace#:021000027672834 Eed: 240830 Ind ID: Apexexpertl Ape Name: Animation And Robotics Ind 240830Ppz9D9 Trn: 2437672834Tc",
+          "WithdrawalAmount": 108.25
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-02",
+          "Description": "08/02 Withdrawal",
+          "WithdrawalAmount": 8500
+        },
+        {
+          "_source": "",
+          "Date": "2024-08-14",
+          "Description": "08/14 Withdrawal",
+          "WithdrawalAmount": 8600
+        }
+      ]
+    }
+  ],
+  "BankAddress": {
+    "_source": "P O Box 182051 Columbus, OH 43218 - 2051",
+    "houseNumber": "2051",
+    "poBox": "P O Box 182051",
+    "postalCode": "43218",
+    "city": "Columbus",
+    "state": "OH",
+    "streetAddress": "2051 P O Box 182051"
+  },
+  "BankName": "CHASE",
+  "StatementEndDate": "2024-08-30",
+  "StatementStartDate": "2024-08-01",
+  "__raw__": {
+    "content": "CHASE JPMorgan Chase Bank, N.A. P O Box 182051 Columbus, OH 43218 - 2051\n00350770 DRE 201 219 24424 NNNNNNNNNNN 1 000000000 64 0000 ANIMATION AND ROBOTICS FOR KIDS, DBA SMART CORE LABS 3011 JOSHUA TREE LN MANVEL TX 77578-3683\nAugust 01, 2024 through August 30, 2024\nAccount Number:\n000000912093783\nCUSTOMER SERVICE INFORMATION\nWeb site:\nChase.com\nService Center:\n1-800-242-7338\nPara Espanol:\n1-888-622-4273\nInternational Calls:\n1-713-262-1679\nWe accept operator relay calls\n03507700501000000025\nWe're updating our Deposit Account Agreement, including the Arbitration section\nOn November 17, 2024, we're updating section X. Arbitration; Resolving Disputes in the Deposit Account Agreement. We've included excerpts of the more significant updates at the end of this statement. The Arbitration section explains how potential disputes and claims are handled between us. You can opt out of arbitration any time before January 16, 2025, by calling us at 1-800-242-7338.\nYou can view the full updated section in the Deposit Account Agreement which will be available on November 17 at chase.com/business/disclosures or by visiting a branch. The new agreement will include these changes as well as any additional updates occurring at this time.\nIf you have any questions, please call the number on this statement. We accept operator relay calls.\nCHECKING SUMMARY\nChase Business Complete Checking\nINSTANCES\nAMOUNT\nBeginning Balance\n$37,495.84\nDeposits and Additions\n25\n62,902.60\nChecks Paid\n3\n-7,996.16\nATM & Debit Card Withdrawals\n8\n-1,292.61\nElectronic Withdrawals\n58\n-64,691.31\nOther Withdrawals\n2\n-17,100.00\nEnding Balance\n96\n$9,318.36\nCongratulations, we waived the $15 Monthly Service Fee for this statement period, based on your qualifying activity.\nHow to Avoid the Monthly Service Fee (MSF)\nIf you meet any of the following qualifying activities for this Chase Business Complete CheckingSM account in a statement period, we will waive the $15 MSF.\nHere's the business activity we used to determine if you qualified for the MSF waiver:\n· $2,000 Minimum Daily Ending Balance: Your lowest daily ending balance was $7,814.53.\n· $2,000 Chase Payment Solutions Activity: $0.00 was deposited into this account. SM\n· $2,000 Chase Ink Business Card Activity: $0.00 was your total Ink activity.\nYou can also avoid the MSF if you:\n· Maintain a linked Chase Private Client Checking M account OR\n. Meet Chase Military Banking requirements\nFor complete details on all requirements to avoid the MSF, please review the Additional Banking Services and Fees for Business Accounts at chase. com/business/disclosures or visit a Chase branch.\nPage 1 of 10\nCHASE\nAugust 01, 2024 through August 30, 2024 Account Number: 000000912093783\nDEPOSITS AND ADDITIONS\nDATE 08/01\nDESCRIPTION Orig CO Name: Sawyer\nDescr: Sawyertoolsec: CCD\nOrig ID:4270465600 Desc Date: CO Entry\nTrace#: 111000020645761 Eed:240801 Ind ID:St-BOP9M6M7J5F6 Ind Name: Mir Hamid Ali Khan Trn: 2140645761Tc\nAMOUNT $1,006.88\n08/02\nDeposit 2030145549\n220.00\n08/05\nOrig CO Name: Sawyer\nDescr: Sawyertoolsec: CCD\nOrig ID:4270465600 Desc Date: CO Entry\nID: St-D7V1C6T1 A3X2 Trace#:111000026098673 Eed:240805 Ind Ind Name: Mir Hamid Ali Khan Trn: 2186098673Tc\n11,770.33\n08/05\nWire Reversal B/O: JPMorgan Chase Bank National Columbus OH 43240 US Org: Ts Fx Retail Inv Ref:/Bnf/Our Ref Jpv240722-002976 Trn: 6241100218Hh\n240.00\n08/06\nOrig CO Name: Sawyer Orig ID:4270465600 Desc Date: CO Entry Descr: Sawyertoolsec: CCD ID:St-L6T5T1T2U0E8 Trace#:111000025777827 Eed:240806 Ind Ind Name: Mir Hamid Ali Khan Trn: 2195777827Tc\n1,291.58\n08/07\nOrig CO Name: Sawyer\nOrig ID:4270465600 Desc Date:\nDescr: Sawyertoolsec: CCD\nCO Entry ID: St-P8Y7J8G6W9F7 Trace#:111000023928616 Eed:240807 Ind Ind Name: Mir Hamid Ali Khan Trn: 2203928616Tc\n4,075.28\n08/08\nOrig CO Name: Sawyer Descr: Sawyertoolsec: CCD Orig ID:4270465600 Desc Date: Trace#: 111000024398203 Eed:240808 Ind CO Entry ID:St-F4U30604W1 X0 Ind Name: Mir Hamid Ali Khan Trn: 2214398203Tc\n1,174.15\n08/09\nOrig CO Name:Intuit 98175455 Orig ID:9215986202 Desc Date: 240809 CO Entry Descr: Deposit Sec: CCD ID:524771996127012 Trace#: 021000022513829 Eed:240809 Ind Ind Name: Animation And Robotics Trn: 2222513829Tc\n14,880.00\n08/09\nOrig CO Name: Sawyer Descr: Sawyertoolsec: CCD\nOrig ID:4270465600 Desc Date:\nTrace#:111000026818176 Eed:240809\nCO Entry Ind ID:St-K7M4V6R9E8A9 Ind Name: Mir Hamid Ali Khan Trn: 2226818176Tc\n322.54\n08/12\nOrig CO Name:Sawyer\nDescr: Sawyertoolsec: CCD\nOrig ID:4270465600 Desc Date:\nTrace#:111000021960146 Eed:240812 Ind CO Entry ID:St-C4TOW4A4O4S7 Ind Name: Mir Hamid Ali Khan Trn: 2251960146Tc\n310.51\n08/13\nOrig CO Name:Intuit 73467513 Orig ID:9215986202 Desc Date: 240813 CO Entry Descr: Deposit Sec: CCD ID:524771996127012 Trace#:021000020310210 Eed:240813 Ind Ind Name: Animation And Robotics Trn: 2260310210Tc\n15,360.00\n08/13\nOrig CO Name: Sawyer Descr: Sawyertoolsec: CCD Orig ID:4270465600 Desc Date: Trace#: 111000025237362 Eed:240813 Ind CO Entry ID:St-C016U6R8F5H2 Ind Name: Mir Hamid Ali Khan Trn: 2265237362Tc\n265.37\n08/14\nOrig CO Name: Sawyer Descr: Sawyertoolsec: CCD\nOrig ID:4270465600 Desc Date:\nTrace#:111000021560110 Eed:240814 Ind\nCO Entry ID:St-X8D7E9D6W1L8 Ind Name: Mir Hamid Ali Khan Trn: 2271560110Tc\n1,058.65\n08/15\nOrig CO Name: Sawyer\nDescr: Sawyertoolsec: CCD\nOrig ID:4270465600 Desc Date: CO Entry\nID: St-G7J8M5A6Q2D8 Trace#: 111000027825578 Eed:240815 Ind Ind Name: Mir Hamid Ali Khan Trn: 2287825578Tc\n973.80\n08/16\nOrig CO Name: Sawyer Descr: Sawyertoolsec: CCD Orig ID:4270465600 Desc Date: Trace#: 111000027401745 Eed:240816 CO Entry Ind ID: St-B3P9H8B4Z9U0 Ind Name: Mir Hamid Ali Khan Trn: 2297401745Tc\n455.59\n08/19\nOrig CO Name: Sawyer\nDescr: Sawyertoolsec: CCD\nOrig ID:4270465600 Desc Date: CO Entry\nTrace#:111000026459549 Eed:240819 Ind ID: St-D6W4S4K8X7N1 Ind Name: Mir Hamid Ali Khan Tm: 2326459549Tc\n980.44\n08/20\nOrig CO Name: Sawyer Orig ID:4270465600 Desc Date: CO Entry Descr: Sawyertoolsec: CCD ID:St-ZOS7D1 V3R4Z5 Trace#:111000023946907 Eed:240820 Ind Ind Name: Mir Hamid Ali Khan Tm: 2333946907Tc\n1,145.24\n08/21\nOrig CO Name: Sawyer Orig ID:4270465600 Desc Date: CO Entry Descr: Sawyertoolsec: CCD Ind ID:St-V1X7F5V6O8D2 Trace#: 111000028504564 Eed:240821 Ind Name: Mir Hamid Ali Khan Tm: 2348504564Tc\n1,150.13\n08/22\nATM Check Deposit 08/22 10611 Broadway St Pearland TX Card 5494\n3,240.00\n08/23\nOrig CO Name: Sawyer Orig ID:4270465600 Desc Date: CO Entry Descr: Sawyertoolsec: CCD ID: St-V9C1V9Q3Q7D9 Trace#:111000021409329 Eed:240823 Ind Ind Name: Mir Hamid Ali Khan Trn: 2361409329Tc\n141.96\n08/26\nOrig CO Name: Sawyer Orig ID:4270465600 Desc Date: CO Entry Descr: Sawyertoolsec: CCD ID:St-SOP1J5L7N3B2 Trace#: 111000023455367 Eed:240826 Ind Ind Name: Mir Hamid Ali Khan Trn: 2393455367Tc\n55.29\nPage 2 of 10\nCHASE\nAugust 01, 2024 through August 30, 2024 Account Number: 000000912093783\nDEPOSITS AND ADDITIONS (continued)\nDATE\nDESCRIPTION\nAMOUNT\n08/27\nOrig CO Name: Sawyer Descr: Sawyertoolsec: CCD ID:St-F2F5W7A7F6F5\nOrig ID:4270465600 Desc Date: CO Entry Trace#:111000026692107 Eed:240827 Ind Ind Name: Mir Hamid Ali Khan Trn: 2406692107Tc\n512.28\n08/28\nOrig CO Name: Sawyer Descr: Sawyertoolsec: CCD ID:St-ZOW2B3G1 J9P5\nOrig ID:4270465600 Desc Date: CO Entry Trace#:111000022029232 Eed:240828 Ind Ind Name: Mir Hamid Ali Khan Trn: 2412029232Tc\n1,268.62\n08/29\nOrig CO Name: Sawyer Descr: Sawyertoolsec: CCD ID: St-C3G8M3L2R8Z7\nOrig ID:4270465600 Desc Date: CO Entry Trace#:111000027696213 Eed:240829 Ind Ind Name: Mir Hamid Ali Khan Tm: 2427696213Tc\n917.18\n08/30\nOrig CO Name: Sawyer Descr: Sawyertoolsec: CCD ID: St-B5POL3WOM207\nOrig ID:4270465600 Desc Date: CO Entry Trace#:111000023510910 Eed:240830 Ind Ind Name: Mir Hamid Ali Khan Trn: 2433510910Tc\n86.78\n13507700502000000065\nTotal Deposits and Additions $62,902.60\nCHECKS PAID\nCHECK NO.\nDESCRIPTION\nDATE PAID\nAMOUNT\n4004 ^\n08/13\n$7,496.16\n4027 * ^\n08/06\n250.00\n4028 ^\n08/13\n250.00\nTotal Checks Paid $7,996.16\nIf you see a description in the Checks Paid section, it means that we received only electronic information about the check, not the original or an image of the check. As a result, we're not able to return the check to you or show you an image.\nAll of your recent checks may not be on this statement, either because they haven't cleared yet or they were listed on one of your previous statements.\n^ An image of this check may be available for you to view on Chase. com.\nATM & DEBIT CARD WITHDRAWALS\nDATE\nDESCRIPTION\nAMOUNT\n08/07\nRecurring Card Purchase 08/06 Sawyer Httpswww.Hisa MI Card 5494\n$179.00\n08/12\nCard Purchase 08/09 Smith Thompson Home S 972-526-8500 TX Card 5494\n32.42\n08/13\nCard Purchase 08/12 Constellation Energy 215-841-5027 IL Card 5494\n586.74\n08/13\nCard Purchase 08/12 Amazon. Com*Rm1Gx5942 Amzn.Com/Bill WA Card 5494\n63.80\n08/13\nCard Purchase 08/13 Amazon Mktpl*Rm0Qq5U Amzn.Com/Bill WA Card 5494\n85.38\n08/26\nCard Purchase 08/24 Amazon. Com*R496Z0Xs1 Amzn. Com/Bill WA Card 5494\n77.49\n08/26\nCard Purchase 08/25 Amazon Mktpl*Rk6K21O Amzn.Com/Bill WA Card 5494\n22.19\n08/28\nRecurring Card Purchase 08/28 Intuit *Qbooks Onlin Cl.Intuit. Com CA Card 5494\n245.59\nTotal ATM & Debit Card Withdrawals $1,292.61\nATM & DEBIT CARD SUMMARY\nMir Khan Card 5494\nTotal ATM Withdrawals & Debits\n$0.00\nTotal Card Purchases\n$1,292.61\nTotal Card Deposits & Credits\n$3,240.00\nATM & Debit Card Totals\nTotal ATM Withdrawals & Debits\n$0.00\nTotal Card Purchases\n$1,292.61\nTotal Card Deposits & Credits\n$3,240.00\nPage 3 of 10\nCHASE\nAugust 01, 2024 through August 30, 2024 Account Number: 000000912093783\nELECTRONIC WITHDRAWALS\nDATE 08/01\nDESCRIPTION Orig CO Name: Headway capital 2 Orig ID: Rep-Enova Desc Date: 240801 CO Entry Descr: D001155622Sec:CCD Trace#: 096016939321094 Eed:240801 Ind ID:217290421 Ind Name: Mir Hamid Ali Khan Trn: 2149321094Tc\nAMOUNT $39.35\n08/02\nOrig CO Name: Txworkforcecomm Orig ID:2146000320 Desc Date:240801 CO Entry Descr: Debit Sec: CCD Trace#: 021000027593199 Eed:240802 Ind ID: (512)463-2325 Ind Name: Two-156178926 Ui Tax Trn: 2157593199Tc Twc\n228.03\n08/02\nOrig CO Name: Sawyer Orig ID:1800948598 Desc Date: CO Entry Descr: Sawyertoolsec: CCD Trace#: 091000014820834 Eed: 240802 Ind ID:St-C4L1R7D9W903 Ind Name: Mir Hamid Ali Khan Trn: 2154820834Tc\n1.03\n08/05\nOrig CO Name: 1 St Natl Bk Omah Orig ID: 8104000010 Desc Date: 240805 CO Entry Descr: Online Pmtsec: Web Trace#: 104000015793938 Eed: 240805_Ind ID:3D397E54Ed28F3 Ind Name: Mirhamid Alikhan Card Pmt Trn: 2185793938Tc Credit\n1,500.00\n08/05\nOrig CO Name: Barclaycard US Orig ID:2510407970 Desc Date: Descr: Creditcardsec: Web Trace#: 026002575859198 Eed:240805 Ind ID:1157967193 CO Entry Ind Name: Mir Hamid Ali Khan Trn: 2185859198Tc\n1,500.00\n08/05\nOrig CO Name: Paypal Orig ID: Paypalsi77 Desc Date:240805 CO Entry Descr:Inst Xfer Sec: Web Trace#:021000021784669 Eed:240805 Ind ID: Stealthmode Ind Name: Animation And Robotics 240805Ppz1Ya Tm: 2181784669Tc\n123.95\n08/06\nOrig CO Name: First Home Bank Orig ID:593526917 Desc Date: Ln Pmtsec: PPD Trace#:063114552483790 Eed:240806 Ind ID: CO Entry Descr: Sba Ind Name: Animation And Robotics Trn: 2192483790Tc\n1,700.77\n08/06\nOrig CO Name:Pcrinvestment-Sl Orig ID: 9000327993 Desc Date:080624 CO Entry Descr: Sigonfile Sec:CCD Trace#: 111924687241780 Eed:240806 Ind ID:7K9Nvg Ind Name: Animation And Robotics 805-699-2040 Trn: 2197241780Tc\n8,478.00\n08/06\nOrig CO Name: Paypal Orig ID: Paypalsi77 Desc Date:240806 CO Entry Descr: Inst Xfer Sec: Web Trace#:021000026687239 Eed: 240806 Ind ID: Godaddy. Com Ind Name: Animation And Robotics 240806Ppza9A Tm: 2196687239Tc\n76.62\n08/09\nOrig CO Name: Irs Orig ID: 3387702000 Desc Date:080924 CO Entry Descr: Usataxpymt sec: CCD ID:227462266080767 Trace#:061036016732065 Eed:240809 Ind Ind Name: Animation And Robotics Tm: 2226732065Tc\n6,701.94\n08/09\nOrig CO Name: Intuit 36227082 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020127096 Eed:240809 Ind ID: 8933349 Ind Name: Animation And Robotics Tm: 2220127096Tc\n1,929.44\n08/09\nOrig CO Name: Intuit 36007116 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020152647 Eed:240809 Ind ID: 8933349 Ind Name: Animation And Robotics Tm: 2220152647Tc\n1,885.59\n08/09\nOrig CO Name: Intuit 36227082 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020127091 Eed:240809 Ind ID: 8933349 Ind Name: Animation And Robotics Tm: 2220127091Tc\n1,833.43\n08/09\nOrig CO Name: Intuit 36329755 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020140713 Eed:240809 Ind ID: 8933349 Ind Name: Animation And Robotics Tm: 2220140713Tc\n1,755.62\n08/09\nOrig CO Name: Intuit 36245178 Orig ID: 4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020137409 Eed:240809 Ind ID:8933349 Ind Name: Animation And Robotics Tm: 2220137409Tc\n1,643.13\n08/09\nOrig CO Name: Intuit 36284657 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020132029 Eed:240809 Ind ID:8933349 Ind Name: Animation And Robotics Tm: 2220132029Tc\n1,461.14\n08/09\nOrig CO Name: Intuit 36245178 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020137408 Eed:240809 Ind ID:8933349 Ind Name: Animation And Robotics Tm: 2220137408Tc\n1,297.63\n08/09\nOrig CO Name: Intuit 36294649 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020154507 Eed:240809 Ind ID:8933349 Ind Name: Animation And Robotics Tm: 2220154507Tc\n1,255.96\nPage 4 of 10\nCHASE\nAugust 01, 2024 through August 30, 2024 Account Number: 000000912093783\nELECTRONIC WITHDRAWALS (continued)\nDATE 08/09\nDESCRIPTION Orig CO Name: Intuit 36284657\nOrig ID:4462800242 Desc Date: 240809 CO Entry\nDescr: Payroll Sec:CCD Trace#: 111000020132031 Eed:240809 Ind ID: 8933349\nInd Name: Animation And Robotics Tm: 2220132031Tc\nAMOUNT 947.38\n08/09\nOrig CO Name: Intuit 36284657\nOrig ID:4462800242 Desc Date: 240809 CO Entry\nDescr: Payroll Sec:CCD Trace#:111000020132028 Eed:240809 Ind ID: 8933349\nInd Name: Animation And Robotics Tm: 2220132028Tc\n895.13\n08/09\nOrig CO Name: Intuit 36227082\nOrig ID:4462800242 Desc Date: 240809 CO Entry\nDescr: Payroll Sec:CCD Trace#: 111000020127094 Eed:240809 Ind ID:8933349\nInd Name: Animation And Robotics Tm: 2220127094Tc\n886.85\n08/09\nOrig CO Name: Intuit 36284657\nOrig ID:4462800242 Desc Date: 240809 CO Entry\nDescr: Payroll Sec:CCD Trace#: 111000020132030 Eed:240809 Ind ID: 8933349\nInd Name: Animation And Robotics Tm: 2220132030Tc\n846.71\n08/09\nOrig CO Name: Intuit 36227082\nOrig ID:4462800242 Desc Date: 240809 CO Entry\nDescr: Payroll Sec: CCD Trace#: 111000020127095 Eed:240809 Ind ID:8933349\nInd Name: Animation And Robotics Tm: 2220127095Tc\n845.03\n08/09\nOrig CO Name: Intuit 36227082\nOrig ID:4462800242 Desc Date: 240809 CO Entry\nDescr: Payroll Sec: CCD Trace#:111000020127093 Eed:240809 Ind ID:8933349\nInd Name: Animation And Robotics Tm: 2220127093Tc\n795.52\n08/09\nOrig CO Name: Intuit 36329755\nOrig ID:4462800242 Desc Date: 240809 CO Entry\nDescr: Payroll Sec: CCD Trace#: 111000020140715 Eed:240809 Ind ID:8933349\nInd Name: Animation And Robotics Tm: 2220140715Tc\n782.48\n08/09\nOrig CO Name: Intuit 32460933\nOrig ID:4462800242 Desc Date: 240809 CO Entry\nDescr: Payroll Sec:CCD Trace#: 111000020145933 Eed:240809 Ind ID: 8933349\nInd Name: Animation And Robotics Tm: 2220145933Tc\n777.13\n08/09\nOrig CO Name: Irs Orig ID: 3387702000 Desc Date:080924 CO Entry Descr: Usataxpymtsec:CCD Trace#:061036016732064 Eed:240809 Ind ID:227462266080741 Ind Name: Animation And Robotics Tm: 2226732064Tc\n545.84\n08/09\nOrig CO Name: Intuit 36294649 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020154508 Eed:240809 Ind ID:8933349 Ind Name: Animation And Robotics Tm: 2220154508Tc\n288.12\n08/09\nOrig CO Name: Intuit 36329755 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec:CCD Trace#: 111000020140714 Eed:240809 Ind ID: 8933349 Ind Name: Animation And Robotics Tm: 2220140714Tc\n203.17\n08/09\nOrig CO Name: Intuit 36227082 Orig ID:4462800242 Desc Date: 240809 CO Entry Descr: Payroll Sec: CCD Trace#: 111000020127092 Eed:240809 Ind ID:8933349 Ind Name: Animation And Robotics Tm: 2220127092Tc\n184.70\n08/09\nOrig CO Name: Intuit 13715245\nOrig ID:9215986202 Desc Date: 240809 CO Entry\nDescr: Tran Fee Sec: CCD Trace#: 021000022423256 Eed:240809 Ind ID:524771996127012\nInd Name: Animation And Robotics Tm: 2222423256Tc\n444.92\n08/13\nOrig CO Name: Discover\nOrig ID:2510020270 Desc Date: 240812 CO Entry\nDescr: E-Payment Sec: Web Trace#:091000019736768 Eed:240813 Ind ID:1739\nInd Name: Alikhan Mir Pymnts Dciintnet Trn: 2269736768Tc DC\n1,500.00\n08/13\nOrig CO Name: Intuit 96887393\nOrig ID:9215986202 Desc Date: 240813 CO Entry\nDescr: Tran Fee Sec: CCD Trace#: 021000020299030 Eed:240813 Ind ID:524771996127012\nInd Name: Animation And Robotics Tm: 2260299030Tc\n459.26\n08/15\nOrig CO Name: Paypal Orig ID: Paypalsi77 Desc Date:240815 CO Entry Descr:Inst Xfer Sec: Web Trace#:021000024431385 Eed: 240815 Ind ID: Uber Eats Ind Name: Animation And Robotics 240815Ppz9J1 Trn: 2284431385Tc\n97.40\n08/19\nOrig CO Name: Tab Bank Orig ID: 1870571941 Desc Date: 240815 CO Entry Descr: Loanpmt Sec: PPD Trace#:124384659637807 Eed:240819 Ind ID: Ind Name: Animation And R Trn: 2329637807Tc\n1,980.13\n08/20\nOrig CO Name: Intuit 37131562 Orig ID:4462800242 Desc Date: 240820 CO Entry Descr: Payroll Sec: CCD Trace#: 111000028499216 Eed:240820 Ind ID:8933349 Ind Name: Animation And Robotics Tm: 2338499216Tc\n907.34\n08/20\nOrig CO Name: Wells Fargo Card Orig ID: 3411650794 Desc Date: 081924 CO Entry Descr: Copymt Sec: Web Trace#:091000013915637 Eed:240820 Ind ID:90154576720494 Ind Name: Alikhan Mirhamid Trn: 2333915637Tc\n1,500.00\n13507700503000000065\nPage 5 of 10\nCHASE\nAugust 01, 2024 through August 30, 2024 Account Number: 000000912093783\nELECTRONIC WITHDRAWALS (continued)\nDATE 08/22\nDESCRIPTION Orig CO Name: Sawyer Orig ID:1800948598 Desc Date:\nID:St-S3G1D7R8S2B6 Trace#: 091000013192023 Eed:240822 Ind\nCO Entry Descr: Sawyertoolsec: CCD\nInd Name: Mir Hamid Ali Khan Trn: 2353192023Tc\nAMOUNT 50.01\n08/23\nOrig CO Name: Intuit 37131586\nOrig ID:4462800242 Desc Date: 240823 CO Entry\nDescr: Payroll Sec:CCD Trace#: 111000027365087 Eed:240823 Ind ID:8933349\nInd Name: Animation And Robotics Tm: 2367365087Tc\n1,929.44\n08/23\nOrig CO Name: Intuit 37454297 Orig ID:4462800242 Desc Date: 240823 CO Entry Descr: Payroll Sec:CCD Trace#: 111000027382208 Eed:240823 Ind ID:8933349 Ind Name: Animation And Robotics Tm: 2367382208Tc\n1,743.57\n08/23\nOrig CO Name: Intuit 37131586 Orig ID:4462800242 Desc Date: 240823 CO Entry Descr: Payroll Sec: CCD Trace#: 111000027365086 Eed:240823 Ind ID:8933349 Ind Name: Animation And Robotics Tm: 2367365086Tc\n1,656.52\n08/23\nOrig CO Name: Intuit 37454297 Orig ID:4462800242 Desc Date: 240823 CO Entry Descr: Payroll Sec:CCD Trace#: 111000027382204 Eed:240823 Ind ID:8933349 Ind Name: Animation And Robotics Tm: 2367382204Tc\n1,455.12\n08/23\nOrig CO Name: Intuit 37131586\nOrig ID:4462800242 Desc Date: 240823 CO Entry\nDescr: Payroll Sec:CCD Trace#: 111000027365085 Eed:240823 Ind ID: 8933349\nInd Name: Animation And Robotics Tm: 2367365085Tc\n1,255.96\n08/23\nOrig CO Name: Intuit 37385824\nOrig ID:4462800242 Desc Date: 240823 CO Entry\nDescr: Payroll Sec:CCD Trace#: 111000027389322 Eed:240823 Ind ID:8933349\nInd Name: Animation And Robotics Tm: 2367389322Tc\n1,015.88\n08/23\nOrig CO Name: Intuit 37131586\nOrig ID:4462800242 Desc Date: 240823 CO Entry\nDescr: Payroll Sec:CCD Trace#: 111000027365088 Eed:240823 Ind ID:8933349\nInd Name: Animation And Robotics Tm: 2367365088Tc\n910.80\n08/23\nDescr: Payroll Sec: CCD Trace#: 111000027389327 Eed:240823 Ind ID:8933349\nOrig Name: Intuit 37385824 Orig ID:4462800242 Desc Date: 240823 CO Entry\nInd Name: Animation And Robotics Tm: 2367389327Tc\n910.80\n08/23\nOrig CO Name: Intuit 37410056 Orig ID:4462800242 Desc Date: 240823 CO Entry Descr: Payroll Sec:CCD Trace#: 111000027362130 Eed:240823 Ind ID:8933349 Ind Name: Animation And Robotics Tm: 2367362130Tc\n909.53\n08/23\nOrig CO Name: Intuit 37454297 Orig ID:4462800242 Desc Date: 240823 CO Entry Descr: Payroll Sec: CCD Trace#: 111000027382207 Eed:240823 Ind ID: 8933349 Ind Name: Animation And Robotics Tm: 2367382207Tc\n775.89\n08/23\nOrig CO Name: Intuit 37385824 Orig ID:4462800242 Desc Date: 240823 CO Entry Descr: Payroll Sec:CCD Trace#: 111000027389326 Eed:240823 Ind ID: 8933349 Ind Name: Animation And Robotics Tm: 2367389326Tc\n728.27\n08/23\nOrig CO Name: Intuit 37385824 Orig ID:4462800242 Desc Date: 240823 CO Entry Descr: Payroll Sec:CCD Trace#: 111000027389324 Eed:240823 Ind ID: 8933349 Ind Name: Animation And Robotics Tm: 2367389324Tc\n578.04\n08/23\nOrig CO Name: Intuit 37454297\nOrig ID:4462800242 Desc Date: 240823 CO Entry\nDescr: Payroll Sec:CCD Trace#: 111000027382205 Eed:240823 Ind ID: 8933349\nInd Name: Animation And Robotics Tm: 2367382205Tc\n504.10\n08/23\nOrig CO Name: Intuit 37385824 Orig ID:4462800242 Desc Date: 240823 CO Entry Descr: Payroll Sec:CCD Trace#: 111000027389323 Eed:240823 Ind ID:8933349 Ind Name: Animation And Robotics Tm: 2367389323Tc\n492.23\n08/23\nOrig CO Name: Intuit 37385824\nOrig ID: 4462800242 Desc Date: 240823 CO Entry\nDescr: Payroll Sec:CCD Trace#: 111000027389325 Eed:240823 Ind ID:8933349\nInd Name: Animation And Robotics Tm: 2367389325Tc\n203.17\n08/23\nOrig CO Name: Intuit 37454297 Orig ID:4462800242 Desc Date: 240823 CO Entry Descr: Payroll Sec:CCD Trace#: 111000027382203 Eed:240823 Ind ID: 8933349 Ind Name: Animation And Robotics Tm: 2367382203Tc\n126.98\n08/23\nOrig CO Name: Intuit 37454297 Orig ID: 4462800242 Desc Date: 240823 CO Entry Descr: Payroll Sec:CCD Trace#: 111000027382206 Eed:240823 Ind ID: 8933349 Ind Name: Animation And Robotics Tm: 2367382206Tc\n110.82\nPage 6 of 10\nCHASE\nAugust 01, 2024 through August 30, 2024 Account Number: 000000912093783\nELECTRONIC WITHDRAWALS (continued)\nDATE\nDESCRIPTION\nAMOUNT\n08/27\nOrig CO Name: Intuit 37651681 Orig ID:4462800242 Desc Date: 240827 CO Entry Descr: Payroll Sec:CCD Trace#: 111000029914310 Eed:240827 Ind ID: 8933349 Ind Name: Animation And Robotics Tm: 2409914310Tc\n295.52\n08/28\nOrig CO Name: Mbfs. Com Orig ID: 1850860002 Desc Date:240828 CO Entry Descr: Auto Pay Sec: Web Trace#: 021000024815796 Eed:240828 Ind ID:5002117665 Ind Name: Mir Hamid Ali Khan Trn: 2414815796Tc\n631.67\n08/30\nOrig CO Name: Paypal Orig ID: Paypalsi77 Desc Date: 240830 CO Entry Descr:Inst Xfer Sec: Web Trace#:021000027672834 Eed: 240830 Ind ID: Apexexpertl Ape Name: Animation And Robotics Ind 240830Ppz9D9 Trn: 2437672834Tc\n108.25\nTotal Electronic Withdrawals $64,691.31\n13507700504000000065\nOTHER WITHDRAWALS\nDATE\nDESCRIPTION\nAMOUNT\n08/02\n08/02 Withdrawal\n$8,500.00\n08/14\n08/14 Withdrawal\n8,600.00\nTotal Other Withdrawals\n$17,100.00\nDAILY ENDING BALANCE\nDATE\nAMOUNT\nDATE\nAMOUNT\nDATE\nAMOUNT\n08/01\n$38,463.37\n08/13\n27,155.11\n08/22\n23,024.08\n08/02\n29,954.31\n08/14\n19,613.76\n08/23\n7,858.92\n08/05\n38,840.69\n08/15\n20,490.16\n08/26\n7,814.53\n08/06\n29,626.88\n08/16\n20,945.75\n08/27\n8,031.29\n08/07\n33,523.16\n08/19\n19,946.06\n08/28\n8,422.65\n08/08\n34,697.31\n08/20\n18,683.96\n08/29\n9,339.83\n08/09\n21,692.99\n08/21\n19,834.09\n08/30\n9,318.36\n08/12\n21,971.08\nIN CASE OF ERRORS OR QUESTIONS ABOUT YOUR ELECTRONIC FUNDS TRANSFERS:\nCall us at 1-866-564-2262 or write us at the address on the front of this statement immediately if you think your statement or receipt is incorrect or if you need more information about a transfer listed on the statement or receipt.\nFor personal accounts only: We must hear from you no later than 60 days after we sent you the FIRST statement on which the problem or error appeared. Be prepared to give us the following information:\n. Your name and account number;\n. A description of the error or the transaction you are unsure about, and why you think it is an error or want more information; and\n. The amount of the suspected error.\nWe will investigate your complaint and will correct any error promptly. If we take more than 10 business days (or 20 business days for new accounts) to do this, we will credit your account for the amount you think is in error so that you will have use of the money during the time it takes us to complete our investigation.\nFor business accounts, see your deposit account agreement or other applicable agreements that govern your account for details.\nIN CASE OF ERRORS OR QUESTIONS ABOUT NON-ELECTRONIC FUNDS TRANSFERS: Contact us immediately if your statement is incorrect or if you need more information about any non-electronic funds transfers on this statement. For more details, see your deposit account agreement or other applicable agreements that govern your account.\nJPMorgan Chase Bank, N.A. Member FDIC\nPage 7 of 10\nCHASE\nAugust 01, 2024 through August 30, 2024 Account Number: 000000912093783\nThe following are excerpts of the more significant updates to Section X. Arbitration; Resolving Disputes to be published November 17, 2024:\n· What claims or disputes subject to arbitration ?:\nClaims or disputed factual or legal issues that arise out of or in any way relate in any way to any aspect of our relationship or interactions with each other, including but not limited to your deposit account, transactions involving your deposit account, whether actual, potential, canceled, or other transactions, any related product, service, or agreement with, or interactions of any kind with Chase employees are subject to arbitration.\n. Can I (customer) cancel or opt out of this agreement to arbitrate ?:\nYou have the right to opt out of this agreement to arbitration if you tell us within sixty (60) days of opening your account, or by January 16, 2025, whichever is later. The exclusive way to opt out is by calling us at 1-800-242-7338. Any other method, form, or means of opting out will be treated as invalid or ineffective. Requests to opt out made more than sixty (60) days after opening your account or by January 16, 2025, whichever is later will be invalid.\n. Does arbitration apply to Claims involving third parties ?:\nFor purposes of arbitration, \"you\" includes any person who is listed on your account or claims a right or interest in your account, and \"we\" and \"us\" includes JPMorgan Chase Bank, N. A., all its affiliates, third-party beneficiaries of this agreement and all third parties who are regarded as agents or representatives of ours in connection with a Claim.\n. How does arbitration work ?:\nArbitration between us shall be administered by the American Arbitration Association (\"AAA\"), which will apply it Consumer Arbitration Rules in effect at the time the arbitration is commenced and the Mass Arbitration Supplementary Rules to mass arbitration matters. A single arbitrator shall conduct proceedings under the Consumer Arbitration Rules, and a Process Arbitrator and single Merits Arbitrator shall conduct each mass arbitration case. The Parties agree that, upon motion by either of us, the arbitrator or Merits Arbitrator shall have the power to decide dispositive issues of law prior to hearing, consistent with Federal Rules of Civil Procedure 12 and 56. All pleadings, information and documents exchanged, and the arbitrator's ruling shall be treated as confidential and have no precedential value. However, if either Party seeks to confirm the arbitrator's decision in court, the Parties agree that the documents necessary for such confirmation need not be filed under seal.\nWho will pay for costs ?:\nEach Party will be responsible for the arbitration costs as allocated by the applicable AAA rules (www.adr.org). However, except for claims filed as part of a mass arbitration, if the arbitrator ultimately rules in your favor, you will be entitled to reimbursement by Chase for all fees you paid to the AAA.\nNEW SECTION: What about mass arbitration matters ?:\nYou agree that these additional requirements (\"Mass Arbitration Procedures\") shall apply to your Claim if it is filed as part of a \"mass arbitration,\" which means twenty-five (25) or more arbitration claims involving the same or similar subject matter and/or issues of law or fact, and where representation of all claimants is the same or coordinated across the cases. You agree to these procedures even though they may delay the arbitration of your individual claim. If at any point you are unsatisfied with the speed by which your matter is proceeding, you are free to withdraw your arbitration demand and proceed in small claims court if the Claim is in that court's jurisdiction and proceeds on an individual basis.\n1. Mass Arbitration Filing Requirements:\nIn addition to the requirements set forth in the AAA Mass Arbitration Supplementary Rules, you agree that upon commencing a case with the AAA, you will provide your name, full Chase account number, mailing address, telephone number, email address, a factual description of every disputed transaction for which you seek compensation (date, amount, and transaction type) and/or event (date, location, and individuals involved), explanation of the basis of your Claim, an itemized calculation of all alleged damages, and, if represented by counsel, a signed statement authorizing us to share information regarding your account and the Claim with them. You agree and understand that failure to provide this information may result in dismissal of your Claim, though you have the right to refile once you provide the information described in the previous sentence.\n2. Process Arbitrator Appointment:\nYou and Chase agree that before an arbitrator is assigned to determine the merit of your claim, a \"Process Arbitrator\" will be appointed. The Process Arbitrator will have the authority to ensure these Mass Arbitration Procedures and the AAA rules are followed. The Parties agree that the Process Arbitrator will be selected by the process set forth in AAA Mass Arbitration Supplementary Rule MA-7(a). In short, each Party will receive a list of proposed Process Arbitrators provided by the AAA and will meet and confer to identify a mutually-agreeable candidate. If the Parties cannot agree, they will submit their preferences to the AAA, and the AAA will select a Process Arbitrator.\nPage 8 of 10\nCHASE\nAugust 01, 2024 through August 30, 2024\nAccount Number:\n000000912093783\n3. Matters To Be Decided by a Process Arbitrator:\nIn addition to the authority outlined in AAA Mass Arbitration Supplementary Rules, the parties agree that the Process Arbitrator shall be empowered to resolve any dispute regarding whether your Claim should be dismissed because, for example, you failed to comply with the Mass Arbitration Filing Requirements, any other requirements outlined in this agreement, or any other reason. You agree that if the Process Arbitrator finds you failed to comply with any requirement, your claim will be dismissed, without prejudice to refiling once the deficiencies are remedied. The Process Arbitrator will also have the power to decide whether, based on the information submitted in the Mass Arbitration Filing Requirements, other threshold eligibility issues for your case to proceed, including but not limited to whether you had an account at Chase, experienced the transaction, fee, or event at issue, or otherwise cannot pursue the claim due to a clear legal or factual deficiency, and to dismiss your claim as appropriate. The Process Arbitrator shall have the power to determine whether or not a given dispute regarding these Mass Arbitration Filing Requirements and/or Procedures are within their jurisdiction. The Process Arbitrator shall be authorized to afford any relief or impose any sanctions available under Federal Rule of Civil Procedure 11, 28 U.S.C. § 1927, or any applicable state law.\n13507700505000000065\n4. Mass Arbitration Procedures:\nFollowing the resolution of any disputes within the jurisdiction of the Process Arbitrator, if any, counsel for the claimants and counsel for Chase shall each select fifteen (15) cases (per side) to proceed first in individual arbitration proceedings on the merits of each claim. Unless the Parties otherwise agree, in no event shall any individual Merits Arbitrator be assigned more than three (3) cases. No AAA per case fee shall be assessed in connection with any case until they are selected to proceed to individual arbitration proceedings as part of the process identified in this section. The Parties agree that each side shall have the right to have fifteen (15) cases of their choosing proceed to final hearing before the process described in this section moves forward. After the first thirty (30) cases are resolved, counsel will meet and confer regarding ways to improve the efficiency of the proceedings, including whether to mediate or change the number of cases filed in each stage. If the Parties are unable to resolve the remaining cases after the conclusion of the initial thirty (30) proceedings and conferring in good faith, each side shall select another fifteen (15) cases (per side) to proceed to individual arbitration proceedings. Each of these thirty (30) cases shall be assigned to a different Merits Arbitrator, though if the Parties otherwise agree, a single Merits Arbitrator may be assigned up to three (3) cases. No AAA per case fee shall be assessed in connection with the remaining cases until they are selected to proceed to individual arbitration proceedings as part of the process identified in this section. After this second set of thirty (30) cases are resolved, counsel will again meet and confer regarding ways to improve the efficiency of the proceedings, including whether to mediate or change the number of cases filed in each stage. If the Parties do not reach a global resolution after the second set of cases are resolved, on either Party's motion, the Process Arbitrator can decide to expedite the proceedings by forgoing more rounds of case selection and instead assigning Merits Arbitrators to all of the remaining cases at once. If no motion is made, this Mass Arbitration Procedure shall continue with thirty (30) cases in each set of proceedings, consistent with the parameters identified above. You and Chase agree to engage in these Mass Arbitration Procedures in good faith, which includes an agreement to pay the Parties' respective case fee if your case is selected. Any dispute regarding any aspect of the specific Mass Arbitration Procedures outlined in this section shall be resolved by the Process Arbitrator.\n5. Interpretation and Enforcement of Mass Arbitration Provision:\nAny dispute regarding the interpretation or enforcement of these mass arbitration procedures shall be decided by the Process Arbitrator or, in cases that have been released to merits proceedings, the Merits Arbitrator. Their decisions regarding the mass arbitrations process and procedures shall be considered interlocutory in nature and not subject to immediate judicial review. If any terms of these Mass Arbitration Procedures are found to be legally unenforceable for any reason, then the proceedings shall otherwise continue in arbitration in accordance with AAA's Mass Arbitration Supplementary rules.\nPage 9 of 10\nCHASE\nAugust 01, 2024 through August 30, 2024 Account Number: 000000912093783\nThis Page Intentionally Left Blank\nPage 10 of 10",
+    "paragraphs": []
+  }
+}

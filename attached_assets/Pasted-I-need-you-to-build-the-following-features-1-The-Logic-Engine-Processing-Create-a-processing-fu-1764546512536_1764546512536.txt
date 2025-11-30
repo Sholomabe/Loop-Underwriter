@@ -1,0 +1,75 @@
+I need you to build the following features:
+
+1. The Logic Engine (Processing)
+Create a processing function that takes the raw transaction list and calculates the following specific metrics. This must handle multiple bank accounts (e.g., Account 1, Account 2) combined or separated:
+
+Income & Revenue Metrics:
+
+Total Income (Sum of all positive deposits).
+
+Deductions (Sum of specific flagged expenses).
+
+Net Revenue (Total Income - Deductions).
+
+Monthly Breakdown: Generate a table of Total Revenues by Month for the last 12 months.
+
+Average Monthly Income & Annual Income.
+
+Deal Specifics:
+
+Diesel's Total Monthly Payments: Identify transactions specifically tagged or matching "Diesel" and sum them.
+
+Total Monthly Payments: Sum of all identified MCA/Loan payments.
+
+Total Monthly Payments (Including Diesel's new deal): A scenario calculation adding a potential new payment to the existing total.
+
+Ratios:
+
+Monthly Payment to Monthly Income %
+
+Original Balance to Annual Income %
+
+Daily Positions Table:
+
+Generate a list of current MCA positions. Columns: Name, Current Balance Amount, Daily/Weekly Payment Amount.
+
+2. Advanced Pattern Recognition (The "Brain")
+Transfer Detection: Implement logic to identify internal transfers.
+
+Logic: If Bank A has a debit of $X and Bank B has a credit of $X (within a 2-day window), tag both as "Internal Transfer" and exclude from Revenue calculations.
+
+Frequency Detection:
+
+Analyze debits to find patterns (Daily or Weekly).
+
+If a description repeats daily (4+ times a week) or weekly (same day of week) with similar amounts, flag it as a "Recurring Position."
+
+Stop/Start Logic: Detect if a recurring payment stopped for >5 days and restarted (flag as "Paused/Resumed") or if the amount changed significantly (flag as "Refinanced").
+
+3. The "Vendor Learning" System (Unrecognized Transactions)
+I need a database table/collection called KnownVendors with columns: name, category (e.g., MCA, Rent, Payroll), match_type (exact or fuzzy).
+
+The Workflow:
+
+When processing transactions, check descriptions against KnownVendors.
+
+Fuzzy Matching: Use a library (like fuse.js or Python fuzzywuzzy) to match names even if spelled slightly differently or different case (case-insensitive).
+
+The "Review Queue": If a transaction looks like a recurring daily/weekly payment BUT is not in the KnownVendors list, send it to a "Review Queue" in the UI.
+
+UI Requirement: Create a "Review Unknown Transactions" page.
+
+Show the unknown transaction name and frequency.
+
+Give me a dropdown to categorize it (e.g., "It's an MCA", "It's Rent", "Ignore").
+
+Save: When I save, add this name to KnownVendors so the AI automatically recognizes it next time.
+
+4. AI Verification Agent
+Integrate an LLM call (OpenAI or Anthropic) as a final verifier.
+
+Pass the calculated summary and the raw high-level stats to the LLM.
+
+Prompt the LLM to: "Act as a Senior Underwriter. Review these calculated metrics and flags. Does the 'Total Monthly Payment' look consistent with the identified positions? Do you see any anomalies in the data that the code might have missed?"
+
+Display the AI's "Second Opinion" in a specific text box on the dashboard.
