@@ -5,7 +5,7 @@ from datetime import datetime
 from database import get_db, init_db
 from models import Deal, PDFFile, Transaction
 from pdf_processor import calculate_pdf_hash, extract_account_number_from_pdf
-from verification import auto_retry_extraction_with_verification
+from koncile_integration import extract_with_koncile, KoncileClient
 from transfer_hunter import find_inter_account_transfers
 import base64
 
@@ -132,11 +132,19 @@ def incoming_email():
                 db.add(pdf_file)
                 db.flush()
                 
-                # Process PDF with auto-retry verification
-                extracted_data, reasoning_log, retry_count, final_status = auto_retry_extraction_with_verification(
-                    file_path,
-                    account_number
-                )
+                # Process PDF with Koncile extraction
+                extracted_data, reasoning_log, verification_result = extract_with_koncile(file_path)
+                
+                # Determine status based on verification
+                if verification_result.is_valid:
+                    final_status = "Pending Approval"
+                elif verification_result.confidence_score >= 0.7:
+                    final_status = "Pending Approval"
+                else:
+                    final_status = "Needs Human Review"
+                
+                # Update account number from Koncile if available
+                koncile_account = extracted_data.get('koncile_summary', {}).get('account_number') or account_number
                 
                 # Extract transactions and run transfer hunter
                 transactions = extracted_data.get('transactions', [])
@@ -151,10 +159,22 @@ def incoming_email():
                     
                     # Save transactions to database
                     for txn in transactions:
+                        # Parse date from various formats
+                        date_str = txn.get('date', '2024-01-01')
+                        txn_date = None
+                        for fmt in ['%Y-%m-%d', '%m/%d/%Y', '%m-%d-%Y', '%d/%m/%Y', '%Y/%m/%d']:
+                            try:
+                                txn_date = datetime.strptime(str(date_str), fmt)
+                                break
+                            except ValueError:
+                                continue
+                        if txn_date is None:
+                            txn_date = datetime.utcnow()
+                        
                         transaction = Transaction(
                             deal_id=new_deal.id,
                             source_account_id=txn.get('source_account_id'),
-                            transaction_date=datetime.strptime(txn.get('date', '2024-01-01'), '%Y-%m-%d'),
+                            transaction_date=txn_date,
                             description=txn.get('description', ''),
                             amount=txn.get('amount', 0),
                             transaction_type=txn.get('type', 'unknown'),
@@ -168,19 +188,24 @@ def incoming_email():
                 # Update deal with extracted data
                 new_deal.extracted_data = extracted_data
                 new_deal.ai_reasoning_log = reasoning_log
-                new_deal.retry_count = retry_count
+                new_deal.retry_count = 0
                 new_deal.status = final_status
                 new_deal.updated_at = datetime.utcnow()
+                
+                # Update PDF file with Koncile account number if found
+                if koncile_account and koncile_account != account_number:
+                    pdf_file.account_number = koncile_account
                 
                 db.commit()
                 
                 return jsonify({
                     "status": "success",
-                    "message": "Email processed successfully",
+                    "message": "Email processed with Koncile extraction",
                     "deal_id": new_deal.id,
                     "final_status": final_status,
-                    "retry_count": retry_count,
-                    "account_number": account_number
+                    "verification_passed": verification_result.is_valid,
+                    "confidence_score": verification_result.confidence_score,
+                    "account_number": koncile_account or account_number
                 }), 200
         
     except Exception as e:

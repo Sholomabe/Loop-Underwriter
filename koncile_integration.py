@@ -463,6 +463,196 @@ def verify_csv_against_summary(
     return verifier.verify(summary, csv_transactions)
 
 
+def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[Dict, str, VerificationResult]:
+    """
+    Complete extraction flow using Koncile API
+    
+    1. Upload document
+    2. Poll for completion
+    3. Parse results
+    4. Verify against summary
+    
+    Args:
+        file_path: Path to PDF file
+        max_poll_seconds: Maximum time to wait for extraction
+        
+    Returns:
+        Tuple of (extracted_data, reasoning_log, verification_result)
+    """
+    import time
+    
+    client = KoncileClient()
+    
+    if not client.is_configured():
+        return {
+            'error': 'Koncile API not configured',
+            'transactions': [],
+            'info_needed': {}
+        }, "Koncile API key not set", VerificationResult(
+            is_valid=False,
+            discrepancies=[],
+            summary_totals={},
+            calculated_totals={},
+            confidence_score=0.0,
+            warnings=["Koncile API not configured"]
+        )
+    
+    reasoning_parts = []
+    reasoning_parts.append(f"Starting Koncile extraction for: {file_path}")
+    
+    try:
+        upload_response = client.upload_document(file_path)
+        task_id = upload_response.get('task_id') or upload_response.get('id')
+        
+        if not task_id:
+            reasoning_parts.append(f"Upload response: {upload_response}")
+            return {
+                'error': 'No task_id in Koncile response',
+                'transactions': [],
+                'info_needed': {}
+            }, "\n".join(reasoning_parts), VerificationResult(
+                is_valid=False,
+                discrepancies=[],
+                summary_totals={},
+                calculated_totals={},
+                confidence_score=0.0,
+                warnings=["Failed to get task_id from Koncile"]
+            )
+        
+        reasoning_parts.append(f"Upload successful. Task ID: {task_id}")
+        
+        start_time = time.time()
+        status = 'processing'
+        
+        while status in ['processing', 'pending', 'queued'] and (time.time() - start_time) < max_poll_seconds:
+            time.sleep(2)
+            status_response = client.get_task_status(task_id)
+            status = status_response.get('status', 'unknown')
+            reasoning_parts.append(f"Poll status: {status}")
+        
+        if status != 'completed':
+            reasoning_parts.append(f"Extraction did not complete. Final status: {status}")
+            return {
+                'error': f'Koncile extraction status: {status}',
+                'transactions': [],
+                'info_needed': {}
+            }, "\n".join(reasoning_parts), VerificationResult(
+                is_valid=False,
+                discrepancies=[],
+                summary_totals={},
+                calculated_totals={},
+                confidence_score=0.0,
+                warnings=[f"Koncile extraction failed with status: {status}"]
+            )
+        
+        results = client.get_extraction_results(task_id)
+        reasoning_parts.append("Extraction completed successfully")
+        
+        general_fields = results.get('General_fields', results.get('general_fields', {}))
+        line_fields = results.get('Line_fields', results.get('line_fields', {}))
+        
+        summary = client.parse_summary(general_fields)
+        transactions = client.parse_transactions(line_fields)
+        
+        reasoning_parts.append(f"Parsed {len(transactions)} transactions")
+        reasoning_parts.append(f"Account: {summary.account_number}")
+        reasoning_parts.append(f"Period: {summary.statement_period_start} to {summary.statement_period_end}")
+        reasoning_parts.append(f"Beginning Balance: ${summary.beginning_balance:,.2f}")
+        reasoning_parts.append(f"Ending Balance: ${summary.ending_balance:,.2f}")
+        reasoning_parts.append(f"Total Deposits: ${summary.total_deposits:,.2f}")
+        reasoning_parts.append(f"Total Withdrawals: ${summary.total_withdrawals:,.2f}")
+        
+        verifier = StatementVerifier()
+        verification = verifier.verify(summary, transactions)
+        
+        if verification.is_valid:
+            reasoning_parts.append(f"✅ Verification PASSED - Confidence: {verification.confidence_score:.0%}")
+        else:
+            reasoning_parts.append(f"⚠️ Verification found {len(verification.discrepancies)} discrepancies")
+            for d in verification.discrepancies:
+                reasoning_parts.append(f"  - {d['field']}: Expected ${d['summary_value']:,.2f}, Got ${d['calculated_value']:,.2f}")
+        
+        deposits = [t for t in transactions if 'credit' in str(t.get('type', '')).lower() or 'deposit' in str(t.get('type', '')).lower()]
+        withdrawals = [t for t in transactions if 'debit' in str(t.get('type', '')).lower() or 'withdrawal' in str(t.get('type', '')).lower()]
+        
+        total_deposits = sum(abs(t['amount']) for t in deposits)
+        total_withdrawals = sum(abs(t['amount']) for t in withdrawals)
+        avg_monthly_income = total_deposits / max(1, len(set(t.get('date', '')[:7] for t in deposits if t.get('date'))))
+        
+        extracted_data = {
+            'transactions': transactions,
+            'info_needed': {
+                'annual_income': total_deposits,
+                'average_monthly_income': avg_monthly_income,
+                'total_monthly_payments': total_withdrawals / max(1, len(set(t.get('date', '')[:7] for t in withdrawals if t.get('date')))),
+                'beginning_balance': summary.beginning_balance,
+                'ending_balance': summary.ending_balance,
+                'length_of_deal_months': 1,
+            },
+            'bank_accounts': {
+                summary.account_number: {
+                    'bank_name': summary.bank_name,
+                    'account_holder': summary.account_holder,
+                    'period_start': summary.statement_period_start,
+                    'period_end': summary.statement_period_end,
+                }
+            },
+            'koncile_summary': {
+                'beginning_balance': summary.beginning_balance,
+                'ending_balance': summary.ending_balance,
+                'total_deposits': summary.total_deposits,
+                'total_deposits_count': summary.total_deposits_count,
+                'total_withdrawals': summary.total_withdrawals,
+                'total_withdrawals_count': summary.total_withdrawals_count,
+                'total_checks': summary.total_checks,
+                'total_fees': summary.total_fees,
+            },
+            'verification': {
+                'is_valid': verification.is_valid,
+                'confidence_score': verification.confidence_score,
+                'discrepancies': verification.discrepancies,
+                'warnings': verification.warnings
+            },
+            'extraction_source': 'koncile',
+            'task_id': task_id,
+            'daily_positions': [],
+            'weekly_positions': [],
+            'monthly_positions_non_mca': [],
+            'other_liabilities': [],
+        }
+        
+        return extracted_data, "\n".join(reasoning_parts), verification
+        
+    except requests.exceptions.RequestException as e:
+        reasoning_parts.append(f"API request error: {str(e)}")
+        return {
+            'error': str(e),
+            'transactions': [],
+            'info_needed': {}
+        }, "\n".join(reasoning_parts), VerificationResult(
+            is_valid=False,
+            discrepancies=[],
+            summary_totals={},
+            calculated_totals={},
+            confidence_score=0.0,
+            warnings=[f"API error: {str(e)}"]
+        )
+    except Exception as e:
+        reasoning_parts.append(f"Unexpected error: {str(e)}")
+        return {
+            'error': str(e),
+            'transactions': [],
+            'info_needed': {}
+        }, "\n".join(reasoning_parts), VerificationResult(
+            is_valid=False,
+            discrepancies=[],
+            summary_totals={},
+            calculated_totals={},
+            confidence_score=0.0,
+            warnings=[f"Error: {str(e)}"]
+        )
+
+
 def format_verification_report(result: VerificationResult) -> str:
     """Format verification result as human-readable report"""
     lines = []
