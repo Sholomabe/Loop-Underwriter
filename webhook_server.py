@@ -588,5 +588,9 @@ def health_check():
     """Health check endpoint."""
     return jsonify({"status": "healthy", "service": "underwriting-webhook"}), 200
 
+def create_standalone_app():
+    """Create a standalone Flask app for running on port 8080"""
+    return app
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
