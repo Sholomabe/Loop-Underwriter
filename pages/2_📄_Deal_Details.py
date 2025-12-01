@@ -547,6 +547,168 @@ with get_db() as db:
     st.divider()
     
     # ============================================
+    # SECTION 5B: STATEMENT VERIFICATION
+    # ============================================
+    st.header("📊 Statement Verification")
+    st.caption("Compare extracted transactions against bank statement summary to catch data errors")
+    
+    with st.expander("🔍 Verify Statement Data", expanded=False):
+        st.markdown("""
+        **How it works:** When Koncile extracts transaction data, this tool compares the 
+        individual transactions against the bank statement summary (totals, counts, balances) 
+        to detect extraction errors.
+        """)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("Bank Statement Summary")
+            st.caption("Enter values from the bank statement summary page")
+            
+            summary_beginning_balance = st.number_input(
+                "Beginning Balance ($)", 
+                value=0.0, 
+                step=100.0,
+                key="verify_beginning"
+            )
+            summary_ending_balance = st.number_input(
+                "Ending Balance ($)", 
+                value=0.0, 
+                step=100.0,
+                key="verify_ending"
+            )
+            summary_deposits_total = st.number_input(
+                "Total Deposits ($)", 
+                value=0.0, 
+                step=100.0,
+                key="verify_deposits_total"
+            )
+            summary_deposits_count = st.number_input(
+                "Deposits Count", 
+                value=0, 
+                step=1,
+                key="verify_deposits_count"
+            )
+        
+        with col2:
+            st.subheader("​")
+            st.caption("​")
+            
+            summary_withdrawals_total = st.number_input(
+                "Total Withdrawals ($)", 
+                value=0.0, 
+                step=100.0,
+                key="verify_withdrawals_total"
+            )
+            summary_withdrawals_count = st.number_input(
+                "Withdrawals Count", 
+                value=0, 
+                step=1,
+                key="verify_withdrawals_count"
+            )
+            summary_checks_total = st.number_input(
+                "Total Checks ($)", 
+                value=0.0, 
+                step=100.0,
+                key="verify_checks_total"
+            )
+            summary_fees_total = st.number_input(
+                "Total Fees ($)", 
+                value=0.0, 
+                step=100.0,
+                key="verify_fees_total"
+            )
+        
+        if st.button("🔎 Run Verification", type="primary", key="run_verification"):
+            transactions = db.query(Transaction).filter(Transaction.deal_id == deal.id).all()
+            
+            if transactions:
+                from koncile_integration import verify_csv_against_summary, StatementVerifier
+                
+                txn_list = [{
+                    'date': str(t.transaction_date),
+                    'description': t.description or '',
+                    'amount': float(t.amount or 0),
+                    'type': t.transaction_type or 'unknown'
+                } for t in transactions]
+                
+                summary_data = {
+                    'beginning_balance': summary_beginning_balance,
+                    'ending_balance': summary_ending_balance,
+                    'deposits_total': summary_deposits_total,
+                    'deposits_count': int(summary_deposits_count),
+                    'withdrawals_total': summary_withdrawals_total,
+                    'withdrawals_count': int(summary_withdrawals_count),
+                    'checks_total': summary_checks_total,
+                    'checks_count': 0,
+                    'fees_total': summary_fees_total,
+                    'fees_count': 0
+                }
+                
+                result = verify_csv_against_summary(txn_list, summary_data)
+                
+                st.divider()
+                
+                if result.is_valid:
+                    st.success(f"✅ VERIFICATION PASSED - Confidence: {result.confidence_score:.0%}")
+                else:
+                    st.error(f"⚠️ VERIFICATION FOUND {len(result.discrepancies)} DISCREPANCIES - Confidence: {result.confidence_score:.0%}")
+                
+                st.markdown("#### Summary vs Extracted Comparison")
+                
+                comparison_data = []
+                categories = [
+                    ('Deposits Total', 'deposits_total', True),
+                    ('Deposits Count', 'deposits_count', False),
+                    ('Withdrawals Total', 'withdrawals_total', True),
+                    ('Withdrawals Count', 'withdrawals_count', False),
+                ]
+                
+                for label, key, is_currency in categories:
+                    summary_val = result.summary_totals.get(key, 0)
+                    calc_val = result.calculated_totals.get(key, 0)
+                    diff = calc_val - summary_val
+                    
+                    if is_currency:
+                        match = "✅" if abs(diff) < 1.0 else "❌"
+                        comparison_data.append({
+                            'Category': label,
+                            'Bank Statement': f"${summary_val:,.2f}",
+                            'Extracted': f"${calc_val:,.2f}",
+                            'Difference': f"${diff:,.2f}",
+                            'Match': match
+                        })
+                    else:
+                        match = "✅" if diff == 0 else "❌"
+                        comparison_data.append({
+                            'Category': label,
+                            'Bank Statement': f"{int(summary_val)}",
+                            'Extracted': f"{int(calc_val)}",
+                            'Difference': f"{int(diff)}",
+                            'Match': match
+                        })
+                
+                st.dataframe(pd.DataFrame(comparison_data), use_container_width=True, hide_index=True)
+                
+                if result.discrepancies:
+                    st.markdown("#### Discrepancy Details")
+                    for d in result.discrepancies:
+                        severity_icon = "🔴" if d['severity'] == 'high' else "🟡"
+                        st.warning(f"{severity_icon} **{d['field']}**: Bank says ${d['summary_value']:,.2f}, Extracted shows ${d['calculated_value']:,.2f} (Diff: ${d['difference']:,.2f})")
+                
+                if result.warnings:
+                    st.markdown("#### Warnings")
+                    for w in result.warnings:
+                        st.info(f"ℹ️ {w}")
+                
+                st.markdown("---")
+                st.caption("**Note:** Discrepancies indicate potential OCR/extraction errors. Use the bank statement summary values for accurate underwriting.")
+            else:
+                st.info("No transactions found for this deal. Upload a bank statement first.")
+    
+    st.divider()
+    
+    # ============================================
     # SECTION 6: AI REASONING LOG
     # ============================================
     st.header("🧠 AI Reasoning Log")

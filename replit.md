@@ -49,6 +49,13 @@ The platform utilizes a multi-page Streamlit application for the frontend and a 
   - Full AI verification using OpenAI for anomaly detection
   - Integrated into Deal Details page showing AI opinion alongside underwriter metrics
   - Flags critical issues, warnings, and provides detailed analysis
+- **Koncile Integration** (`koncile_integration.py`): Bank statement extraction via Koncile API:
+  - Connects to Koncile API for automated document extraction
+  - Pulls both General_fields (summary) and Line_fields (transactions)
+  - Statement Verification feature compares extracted transactions against bank summary
+  - Detects OCR/extraction errors by checking deposits, withdrawals, checks, and fees match
+  - Confidence scoring based on discrepancy severity
+  - Integrated verification panel in Deal Details page
 
 ### Feature Specifications
 - **Dynamic Configuration**: Manages underwriting rules (e.g., `min_annual_income`, `holdback_percentage`) and system settings (e.g., `max_retry_attempts`, `transfer_detection_window_days`).
