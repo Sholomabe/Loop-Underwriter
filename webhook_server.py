@@ -315,12 +315,11 @@ def koncile_callback():
             
             pdf_file = PDFFile(
                 deal_id=new_deal.id,
-                filename=f"koncile_statement_{task_id}.pdf",
                 file_path=f"koncile://{task_id}",
                 file_hash=virtual_hash,
                 account_number=account_number,
                 account_status="from_koncile",
-                uploaded_at=datetime.utcnow()
+                created_at=datetime.utcnow()
             )
             db.add(pdf_file)
             db.flush()
@@ -331,9 +330,9 @@ def koncile_callback():
                 'koncile_summary': {
                     'account_number': summary.account_number,
                     'bank_name': summary.bank_name,
-                    'statement_period': f"{summary.statement_start_date} to {summary.statement_end_date}",
-                    'opening_balance': float(summary.opening_balance),
-                    'closing_balance': float(summary.closing_balance),
+                    'statement_period': f"{summary.statement_period_start} to {summary.statement_period_end}",
+                    'opening_balance': float(summary.beginning_balance),
+                    'closing_balance': float(summary.ending_balance),
                     'total_deposits': float(summary.total_deposits),
                     'total_deposits_count': summary.total_deposits_count,
                     'total_withdrawals': float(summary.total_withdrawals),
