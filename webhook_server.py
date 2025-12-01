@@ -135,11 +135,17 @@ def incoming_email():
                 # Process PDF with Koncile extraction
                 extracted_data, reasoning_log, verification_result = extract_with_koncile(file_path)
                 
+                # Check for extraction errors
+                if extracted_data.get('error'):
+                    final_status = "Extraction Failed"
+                    reasoning_log += f"\n\nExtraction Error: {extracted_data.get('error')}"
                 # Determine status based on verification
-                if verification_result.is_valid:
+                elif verification_result.is_valid:
                     final_status = "Pending Approval"
                 elif verification_result.confidence_score >= 0.7:
                     final_status = "Pending Approval"
+                elif verification_result.confidence_score >= 0.5:
+                    final_status = "Needs Human Review"
                 else:
                     final_status = "Needs Human Review"
                 

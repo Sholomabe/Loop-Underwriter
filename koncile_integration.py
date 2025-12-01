@@ -257,6 +257,32 @@ class StatementVerifier:
         discrepancies = []
         warnings = []
         
+        if not transactions:
+            return VerificationResult(
+                is_valid=False,
+                discrepancies=[{
+                    'field': 'Transaction Count',
+                    'summary_value': summary.total_deposits_count + summary.total_withdrawals_count,
+                    'calculated_value': 0,
+                    'difference': -(summary.total_deposits_count + summary.total_withdrawals_count),
+                    'severity': 'high'
+                }],
+                summary_totals={
+                    'deposits_total': float(summary.total_deposits),
+                    'deposits_count': float(summary.total_deposits_count),
+                    'withdrawals_total': float(summary.total_withdrawals),
+                    'withdrawals_count': float(summary.total_withdrawals_count),
+                },
+                calculated_totals={
+                    'deposits_total': 0.0,
+                    'deposits_count': 0.0,
+                    'withdrawals_total': 0.0,
+                    'withdrawals_count': 0.0,
+                },
+                confidence_score=0.0,
+                warnings=["No transactions extracted - verification failed"]
+            )
+        
         deposits = [t for t in transactions if self._is_deposit(t)]
         withdrawals = [t for t in transactions if self._is_withdrawal(t)]
         checks = [t for t in transactions if self._is_check(t)]
@@ -484,11 +510,7 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[D
     client = KoncileClient()
     
     if not client.is_configured():
-        return {
-            'error': 'Koncile API not configured',
-            'transactions': [],
-            'info_needed': {}
-        }, "Koncile API key not set", VerificationResult(
+        no_config_verification = VerificationResult(
             is_valid=False,
             discrepancies=[],
             summary_totals={},
@@ -496,6 +518,22 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[D
             confidence_score=0.0,
             warnings=["Koncile API not configured"]
         )
+        return {
+            'error': 'Koncile API not configured',
+            'transactions': [],
+            'info_needed': {},
+            'extraction_source': 'koncile',
+            'verification': {
+                'is_valid': False,
+                'confidence_score': 0.0,
+                'discrepancies': [],
+                'warnings': ["Koncile API not configured"]
+            },
+            'daily_positions': [],
+            'weekly_positions': [],
+            'monthly_positions_non_mca': [],
+            'other_liabilities': [],
+        }, "Koncile API key not set", no_config_verification
     
     reasoning_parts = []
     reasoning_parts.append(f"Starting Koncile extraction for: {file_path}")
@@ -506,11 +544,7 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[D
         
         if not task_id:
             reasoning_parts.append(f"Upload response: {upload_response}")
-            return {
-                'error': 'No task_id in Koncile response',
-                'transactions': [],
-                'info_needed': {}
-            }, "\n".join(reasoning_parts), VerificationResult(
+            no_task_verification = VerificationResult(
                 is_valid=False,
                 discrepancies=[],
                 summary_totals={},
@@ -518,6 +552,22 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[D
                 confidence_score=0.0,
                 warnings=["Failed to get task_id from Koncile"]
             )
+            return {
+                'error': 'No task_id in Koncile response',
+                'transactions': [],
+                'info_needed': {},
+                'extraction_source': 'koncile',
+                'verification': {
+                    'is_valid': False,
+                    'confidence_score': 0.0,
+                    'discrepancies': [],
+                    'warnings': ["Failed to get task_id from Koncile"]
+                },
+                'daily_positions': [],
+                'weekly_positions': [],
+                'monthly_positions_non_mca': [],
+                'other_liabilities': [],
+            }, "\n".join(reasoning_parts), no_task_verification
         
         reasoning_parts.append(f"Upload successful. Task ID: {task_id}")
         
@@ -532,11 +582,7 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[D
         
         if status != 'completed':
             reasoning_parts.append(f"Extraction did not complete. Final status: {status}")
-            return {
-                'error': f'Koncile extraction status: {status}',
-                'transactions': [],
-                'info_needed': {}
-            }, "\n".join(reasoning_parts), VerificationResult(
+            incomplete_verification = VerificationResult(
                 is_valid=False,
                 discrepancies=[],
                 summary_totals={},
@@ -544,6 +590,22 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[D
                 confidence_score=0.0,
                 warnings=[f"Koncile extraction failed with status: {status}"]
             )
+            return {
+                'error': f'Koncile extraction status: {status}',
+                'transactions': [],
+                'info_needed': {},
+                'extraction_source': 'koncile',
+                'verification': {
+                    'is_valid': False,
+                    'confidence_score': 0.0,
+                    'discrepancies': [],
+                    'warnings': [f"Koncile extraction failed with status: {status}"]
+                },
+                'daily_positions': [],
+                'weekly_positions': [],
+                'monthly_positions_non_mca': [],
+                'other_liabilities': [],
+            }, "\n".join(reasoning_parts), incomplete_verification
         
         results = client.get_extraction_results(task_id)
         reasoning_parts.append("Extraction completed successfully")
@@ -625,11 +687,7 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[D
         
     except requests.exceptions.RequestException as e:
         reasoning_parts.append(f"API request error: {str(e)}")
-        return {
-            'error': str(e),
-            'transactions': [],
-            'info_needed': {}
-        }, "\n".join(reasoning_parts), VerificationResult(
+        error_verification = VerificationResult(
             is_valid=False,
             discrepancies=[],
             summary_totals={},
@@ -637,13 +695,25 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[D
             confidence_score=0.0,
             warnings=[f"API error: {str(e)}"]
         )
-    except Exception as e:
-        reasoning_parts.append(f"Unexpected error: {str(e)}")
         return {
             'error': str(e),
             'transactions': [],
-            'info_needed': {}
-        }, "\n".join(reasoning_parts), VerificationResult(
+            'info_needed': {},
+            'extraction_source': 'koncile',
+            'verification': {
+                'is_valid': False,
+                'confidence_score': 0.0,
+                'discrepancies': [],
+                'warnings': [f"API error: {str(e)}"]
+            },
+            'daily_positions': [],
+            'weekly_positions': [],
+            'monthly_positions_non_mca': [],
+            'other_liabilities': [],
+        }, "\n".join(reasoning_parts), error_verification
+    except Exception as e:
+        reasoning_parts.append(f"Unexpected error: {str(e)}")
+        error_verification = VerificationResult(
             is_valid=False,
             discrepancies=[],
             summary_totals={},
@@ -651,6 +721,22 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[D
             confidence_score=0.0,
             warnings=[f"Error: {str(e)}"]
         )
+        return {
+            'error': str(e),
+            'transactions': [],
+            'info_needed': {},
+            'extraction_source': 'koncile',
+            'verification': {
+                'is_valid': False,
+                'confidence_score': 0.0,
+                'discrepancies': [],
+                'warnings': [f"Error: {str(e)}"]
+            },
+            'daily_positions': [],
+            'weekly_positions': [],
+            'monthly_positions_non_mca': [],
+            'other_liabilities': [],
+        }, "\n".join(reasoning_parts), error_verification
 
 
 def format_verification_report(result: VerificationResult) -> str:
