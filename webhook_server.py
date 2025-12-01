@@ -220,6 +220,190 @@ def incoming_email():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+@app.route('/koncile-callback', methods=['POST'])
+def koncile_callback():
+    """
+    Webhook endpoint to receive extraction results from Koncile.
+    Configure this URL in your Koncile dashboard under webhook settings.
+    
+    Expected payload from Koncile:
+    {
+        "task_id": "string",
+        "status": "DONE|DUPLICATE|IN_PROGRESS",
+        "general_fields": {...},
+        "repeated_fields": [...]
+    }
+    """
+    try:
+        data = request.json
+        
+        if not data:
+            return jsonify({"error": "No JSON payload received"}), 400
+        
+        task_id = data.get('task_id', '')
+        status = data.get('status', '')
+        general_fields = data.get('general_fields', {})
+        repeated_fields = data.get('repeated_fields', [])
+        
+        # Log the callback
+        print(f"Koncile callback received - Task: {task_id}, Status: {status}")
+        
+        # Only process completed extractions
+        if status not in ['DONE', 'done', 'completed']:
+            return jsonify({
+                "status": "acknowledged",
+                "message": f"Task {task_id} status: {status} - waiting for completion"
+            }), 200
+        
+        # Parse Koncile data using our existing integration
+        from koncile_integration import KoncileClient, StatementVerifier
+        
+        # Create client to use its parsing methods
+        client = KoncileClient()
+        
+        # Parse summary from general_fields
+        summary = client.parse_summary(general_fields)
+        
+        # Parse transactions from repeated_fields (line items)
+        transactions = client.parse_transactions({'Line_fields': repeated_fields})
+        
+        # Run verification
+        verifier = StatementVerifier()
+        verification = verifier.verify(summary, transactions)
+        
+        # Determine status based on verification
+        if verification.is_valid:
+            final_status = "Pending Approval"
+        elif verification.confidence_score >= 0.7:
+            final_status = "Pending Approval"
+        elif verification.confidence_score >= 0.5:
+            final_status = "Needs Human Review"
+        else:
+            final_status = "Needs Human Review"
+        
+        # Get account info for transaction linking
+        account_number = summary.account_number or general_fields.get('account_number', 'Unknown')
+        bank_name = summary.bank_name or general_fields.get('bank_name', 'Unknown')
+        
+        with get_db() as db:
+            # Check for duplicate by task_id (prevent reprocessing same Koncile task)
+            existing_deal = db.query(Deal).filter(
+                Deal.email_body.contains(f"Task ID: {task_id}")
+            ).first()
+            
+            if existing_deal:
+                return jsonify({
+                    "status": "duplicate",
+                    "message": f"Task {task_id} already processed",
+                    "deal_id": existing_deal.id
+                }), 200
+            
+            # Create a new deal from the Koncile callback
+            new_deal = Deal(
+                sender=f"koncile-email@{bank_name.lower().replace(' ', '')}.com",
+                subject=f"[Koncile] Bank Statement - {account_number}",
+                email_body=f"Koncile Task ID: {task_id}\nProcessed via email integration\nBank: {bank_name}\nAccount: {account_number}",
+                status=final_status,
+                created_at=datetime.utcnow()
+            )
+            db.add(new_deal)
+            db.flush()
+            
+            # Create a virtual PDFFile record for tracking (no actual file since Koncile has it)
+            import hashlib
+            virtual_hash = hashlib.sha256(f"koncile:{task_id}".encode()).hexdigest()
+            
+            pdf_file = PDFFile(
+                deal_id=new_deal.id,
+                filename=f"koncile_statement_{task_id}.pdf",
+                file_path=f"koncile://{task_id}",
+                file_hash=virtual_hash,
+                account_number=account_number,
+                account_status="from_koncile",
+                uploaded_at=datetime.utcnow()
+            )
+            db.add(pdf_file)
+            db.flush()
+            
+            # Build extracted data structure
+            extracted_data = {
+                'transactions': transactions,
+                'koncile_summary': {
+                    'account_number': summary.account_number,
+                    'bank_name': summary.bank_name,
+                    'statement_period': f"{summary.statement_start_date} to {summary.statement_end_date}",
+                    'opening_balance': float(summary.opening_balance),
+                    'closing_balance': float(summary.closing_balance),
+                    'total_deposits': float(summary.total_deposits),
+                    'total_deposits_count': summary.total_deposits_count,
+                    'total_withdrawals': float(summary.total_withdrawals),
+                    'total_withdrawals_count': summary.total_withdrawals_count,
+                    'total_checks': float(summary.total_checks),
+                    'total_fees': float(summary.total_fees),
+                },
+                'verification': {
+                    'is_valid': verification.is_valid,
+                    'confidence_score': verification.confidence_score,
+                    'discrepancies': verification.discrepancies,
+                    'warnings': verification.warnings
+                },
+                'extraction_source': 'koncile_email',
+                'task_id': task_id,
+                'daily_positions': [],
+                'weekly_positions': [],
+                'monthly_positions_non_mca': [],
+                'other_liabilities': [],
+            }
+            
+            # Store transactions in database with source_account_id
+            for txn in transactions:
+                txn_date = None
+                if txn.get('date'):
+                    for fmt in ['%Y-%m-%d', '%m/%d/%Y', '%m/%d/%y', '%d/%m/%Y']:
+                        try:
+                            txn_date = datetime.strptime(str(txn['date']), fmt)
+                            break
+                        except ValueError:
+                            continue
+                if txn_date is None:
+                    txn_date = datetime.utcnow()
+                
+                transaction = Transaction(
+                    deal_id=new_deal.id,
+                    source_account_id=account_number,
+                    transaction_date=txn_date,
+                    description=txn.get('description', ''),
+                    amount=txn.get('amount', 0),
+                    transaction_type=txn.get('type', 'unknown'),
+                    category=txn.get('category', 'other'),
+                    created_at=datetime.utcnow()
+                )
+                db.add(transaction)
+            
+            # Update deal with extracted data
+            new_deal.extracted_data = extracted_data
+            new_deal.ai_reasoning_log = f"Koncile Email Integration\nTask ID: {task_id}\nVerification: {'PASSED' if verification.is_valid else 'NEEDS REVIEW'}\nConfidence: {verification.confidence_score:.0%}"
+            new_deal.updated_at = datetime.utcnow()
+            
+            db.commit()
+            
+            return jsonify({
+                "status": "success",
+                "message": "Koncile extraction processed successfully",
+                "deal_id": new_deal.id,
+                "final_status": final_status,
+                "verification_passed": verification.is_valid,
+                "confidence_score": verification.confidence_score,
+                "transaction_count": len(transactions)
+            }), 200
+    
+    except Exception as e:
+        print(f"Error processing Koncile callback: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/gmail-webhook', methods=['POST'])
 def gmail_webhook():
     """
