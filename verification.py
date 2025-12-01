@@ -388,6 +388,9 @@ def extract_with_koncile_for_training(
     try:
         extracted_data, reasoning_log, verification_result = extract_with_koncile(pdf_path)
         
+        if extracted_data.get('error'):
+            raise Exception(extracted_data.get('error'))
+        
         if verification_result.is_valid and verification_result.confidence_score >= 0.8:
             final_status = "Pending Approval"
         else:
