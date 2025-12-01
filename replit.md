@@ -27,6 +27,28 @@ The platform utilizes a multi-page Streamlit application for the frontend and a 
 - **MCA-Only Position Detection**: Positions table only includes MCA lenders using a keyword whitelist (CAPITAL, FUNDING, ADVANCE, FINANCING, MANAGEMENT, CREDIBLY, FORWARD, ONDECK, HEADWAY, KALAMATA, HUNTER, etc.). Operating expenses like credit cards (DISCOVER, AMEX, CHASE CARD) and insurance (UTICA, ALLSTATE, PROGRESSIVE) are moved to a separate "Other Liabilities" table.
 - **Loan Simulator ("Diesel" Feature)**: Sidebar widget on Deal Details page that calculates affordability for new loans. Inputs: Loan Amount, Factor Rate, Term (Daily/Weekly). Outputs: Daily/Weekly/Monthly Payment, Total Payback, and Projected Balance with red warning if cash flow is insufficient.
 - **PDF Chunking for Large Documents**: Large PDF text (>50k characters) is split into overlapping chunks, processed separately through OpenAI, and intelligently merged. Uses max-value deduplication for revenues by month and preserves AI-calculated metrics from each chunk.
+- **Logic Engine** (`logic_engine.py`): Core calculation module that processes transaction data to compute:
+  - Income & Revenue metrics (total income, deductions, net revenue, averages)
+  - Monthly revenue breakdown tables
+  - MCA position detection (daily/weekly payments with frequency analysis)
+  - Diesel payment detection and projections
+  - Underwriting ratios (payment-to-income, available capacity)
+  - Complete positions table generation
+- **Pattern Recognizer** (`logic_engine.py:PatternRecognizer`): Advanced pattern detection for:
+  - Internal transfer detection using 2-day window matching across accounts
+  - Recurring payment pattern analysis (daily/weekly frequency detection)
+  - Stop/start pattern detection (paused/resumed payments, refinancing)
+- **Vendor Learning System**: Machine learning for transaction categorization:
+  - `KnownVendor` table stores recognized vendors with categories (MCA, Insurance, Payroll, etc.)
+  - Fuzzy matching (fuzzywuzzy) to match transactions against known vendors
+  - Review Unknown Transactions page (`pages/5_🔍_Review_Transactions.py`) for human categorization
+  - Learning from human input to improve future matching
+  - Seeded with 39 known vendors (20 MCA lenders, 19 operating expenses)
+- **AI Verification Agent** (`ai_verification_agent.py`): LLM-powered second opinion system:
+  - Quick validation for basic sanity checks (payment ratios, position counts)
+  - Full AI verification using OpenAI for anomaly detection
+  - Integrated into Deal Details page showing AI opinion alongside underwriter metrics
+  - Flags critical issues, warnings, and provides detailed analysis
 
 ### Feature Specifications
 - **Dynamic Configuration**: Manages underwriting rules (e.g., `min_annual_income`, `holdback_percentage`) and system settings (e.g., `max_retry_attempts`, `transfer_detection_window_days`).
