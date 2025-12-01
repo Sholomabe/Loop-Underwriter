@@ -2,6 +2,7 @@ from typing import Dict, Tuple, Optional, List
 import json
 from datetime import datetime
 from openai_integration import extract_financial_data_from_pdf
+from koncile_integration import extract_with_koncile
 from transfer_hunter import calculate_revenue_excluding_transfers, is_payment_category_debit, cluster_positions_by_merchant
 
 
@@ -342,6 +343,99 @@ def auto_retry_extraction_with_verification(
                 break
     
     return extracted_data, reasoning_log, retry_count, final_status
+
+
+def extract_with_koncile_for_training(
+    pdf_path: str,
+    account_id: Optional[str] = None
+) -> Tuple[Dict, str, int, str]:
+    """
+    Extract data using Koncile API for training purposes.
+    
+    This function mirrors the interface of auto_retry_extraction_with_verification
+    but uses Koncile as the extraction engine instead of OpenAI.
+    
+    Falls back to OpenAI extraction if Koncile API is not configured.
+    
+    Args:
+        pdf_path: Path to PDF file
+        account_id: Account identifier (optional)
+    
+    Returns:
+        Tuple of (extracted_data, reasoning_log, retry_count, final_status)
+        - final_status: "Pending Approval" or "Needs Human Review"
+    """
+    import os
+    
+    koncile_api_key = os.environ.get("KONCILE_API_KEY")
+    
+    if not koncile_api_key:
+        reasoning_log = "[FALLBACK] Koncile API key not configured. Using OpenAI extraction instead.\n"
+        extracted_data, ai_reasoning = extract_financial_data_from_pdf(pdf_path, account_id)
+        reasoning_log += ai_reasoning
+        
+        transactions = extracted_data.get('transactions', [])
+        is_valid, error_message = verify_extraction_math(extracted_data, transactions)
+        
+        if is_valid:
+            final_status = "Pending Approval"
+        else:
+            final_status = "Needs Human Review"
+            reasoning_log += f"\n\nVerification issue: {error_message}"
+        
+        return extracted_data, reasoning_log, 0, final_status
+    
+    try:
+        extracted_data, reasoning_log, verification_result = extract_with_koncile(pdf_path)
+        
+        if verification_result.is_valid and verification_result.confidence_score >= 0.8:
+            final_status = "Pending Approval"
+        else:
+            final_status = "Needs Human Review"
+        
+        reasoning_log += f"\n\nKoncile Verification:"
+        reasoning_log += f"\n- Valid: {verification_result.is_valid}"
+        reasoning_log += f"\n- Confidence: {verification_result.confidence_score:.1%}"
+        
+        if verification_result.discrepancies:
+            reasoning_log += f"\n- Discrepancies: {len(verification_result.discrepancies)}"
+            for disc in verification_result.discrepancies[:5]:
+                reasoning_log += f"\n  * {disc.get('field', 'unknown')}: expected {disc.get('expected', 0)}, got {disc.get('actual', 0)} (diff: {disc.get('difference', 0)}, severity: {disc.get('severity', 'unknown')})"
+        
+        if verification_result.warnings:
+            reasoning_log += f"\n- Warnings: {', '.join(verification_result.warnings[:3])}"
+        
+        return extracted_data, reasoning_log, 0, final_status
+        
+    except Exception as e:
+        error_msg = f"Koncile extraction failed: {str(e)}. Falling back to OpenAI."
+        
+        try:
+            extracted_data, ai_reasoning = extract_financial_data_from_pdf(pdf_path, account_id)
+            reasoning_log = f"[FALLBACK] {error_msg}\n\n{ai_reasoning}"
+            
+            transactions = extracted_data.get('transactions', [])
+            is_valid, error_message = verify_extraction_math(extracted_data, transactions)
+            
+            if is_valid:
+                final_status = "Pending Approval"
+            else:
+                final_status = "Needs Human Review"
+                reasoning_log += f"\n\nVerification issue: {error_message}"
+            
+            return extracted_data, reasoning_log, 0, final_status
+            
+        except Exception as fallback_error:
+            return {
+                'error': f"Both Koncile and OpenAI extraction failed: {str(fallback_error)}",
+                'transactions': [],
+                'info_needed': {},
+                'extraction_source': 'failed',
+                'daily_positions': [],
+                'weekly_positions': [],
+                'monthly_positions_non_mca': [],
+                'other_liabilities': [],
+            }, f"Extraction failed: {str(fallback_error)}", 0, "Needs Human Review"
 
 
 def save_correction_pattern(

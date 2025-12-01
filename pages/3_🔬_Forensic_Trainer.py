@@ -11,10 +11,16 @@ st.set_page_config(page_title="Forensic Trainer", page_icon="🔬", layout="wide
 
 st.title("🔬 Forensic Trainer - Advanced AI Training")
 
+koncile_configured = bool(os.environ.get("KONCILE_API_KEY"))
+if koncile_configured:
+    st.success("Koncile API configured - Training will use Koncile extraction (same as production)")
+else:
+    st.warning("Koncile API not configured - Training will fall back to OpenAI extraction")
+
 st.markdown("""
 This is the **Adversarial Training System** where you can:
 1. Upload historical deals with known "truth" values
-2. Let the AI analyze blindly
+2. Let the AI analyze blindly (using Koncile extraction)
 3. See where it went wrong
 4. Teach the AI by showing it the exact errors
 """)
@@ -469,7 +475,7 @@ with st.form("upload_training_deal"):
             # Create a training deal
             with get_db() as db:
                 from pdf_processor import calculate_pdf_hash, extract_account_number_from_pdf
-                from verification import auto_retry_extraction_with_verification
+                from verification import extract_with_koncile_for_training
                 from transfer_hunter import find_inter_account_transfers
                 
                 # Create deal
@@ -519,8 +525,8 @@ with st.form("upload_training_deal"):
                         )
                         db.add(pdf_file)
                     
-                    # Extract data (blind run)
-                    extracted_data, reasoning_log, retry_count, final_status = auto_retry_extraction_with_verification(
+                    # Extract data using Koncile (blind run)
+                    extracted_data, reasoning_log, retry_count, final_status = extract_with_koncile_for_training(
                         pdf_path,
                         account_number
                     )
