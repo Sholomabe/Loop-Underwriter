@@ -109,13 +109,12 @@ class KoncileClient:
         if not self.is_configured():
             raise ValueError("Koncile API key not configured.")
         
-        url = f"{self.base_url}/v1/fetch_tasks_results/"
-        params = {"task_id": f"{task_id}/"}
+        url = f"{self.base_url}/v1/fetch_tasks_results/?task_id={task_id}/"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "accept": "application/json"
         }
-        response = requests.get(url, headers=headers, params=params)
+        response = requests.get(url, headers=headers)
         response.raise_for_status()
         return response.json()
     
