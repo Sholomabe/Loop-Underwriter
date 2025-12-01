@@ -44,22 +44,34 @@ class LogicEngine:
         
         if 'amount' in df.columns:
             df['amount'] = df['amount'].apply(safe_float)
+        else:
+            df['amount'] = 0.0
         
         if 'date' in df.columns:
             df['date'] = pd.to_datetime(df['date'], errors='coerce')
         elif 'transaction_date' in df.columns:
             df['date'] = pd.to_datetime(df['transaction_date'], errors='coerce')
+        else:
+            df['date'] = pd.NaT
         
         if 'type' in df.columns:
-            df['type'] = df['type'].str.lower().fillna('unknown')
+            df['type'] = df['type'].astype(str).str.lower().fillna('unknown')
         else:
             df['type'] = df['amount'].apply(lambda x: 'credit' if x > 0 else 'debit')
         
         if 'source_account_id' not in df.columns:
             df['source_account_id'] = 'default'
         
+        if 'is_internal_transfer' not in df.columns:
+            df['is_internal_transfer'] = False
+        else:
+            df['is_internal_transfer'] = df['is_internal_transfer'].fillna(False)
+        
+        if 'description' not in df.columns:
+            df['description'] = ''
+        
         df['month'] = df['date'].dt.to_period('M') if 'date' in df.columns else None
-        df['description_clean'] = df.get('description', '').fillna('').str.upper().str.strip()
+        df['description_clean'] = df['description'].fillna('').astype(str).str.upper().str.strip()
         
         return df
     
@@ -82,7 +94,7 @@ class LogicEngine:
         
         credits = self.df[
             ((self.df['type'] == 'credit') | (self.df['amount'] > 0)) &
-            (~self.df.get('is_internal_transfer', False).fillna(False))
+            (~self.df['is_internal_transfer'])
         ]
         total_income = credits['amount'].abs().sum()
         
@@ -122,7 +134,7 @@ class LogicEngine:
         
         credits = self.df[
             ((self.df['type'] == 'credit') | (self.df['amount'] > 0)) &
-            (~self.df.get('is_internal_transfer', False).fillna(False))
+            (~self.df['is_internal_transfer'])
         ]
         
         monthly = credits.groupby('month')['amount'].apply(lambda x: x.abs().sum()).reset_index()
@@ -437,11 +449,15 @@ class PatternRecognizer:
         
         if 'amount' in df.columns:
             df['amount'] = df['amount'].apply(safe_float)
+        else:
+            df['amount'] = 0.0
         
         if 'date' in df.columns:
             df['date'] = pd.to_datetime(df['date'], errors='coerce')
         elif 'transaction_date' in df.columns:
             df['date'] = pd.to_datetime(df['transaction_date'], errors='coerce')
+        else:
+            df['date'] = pd.NaT
         
         if 'type' not in df.columns:
             df['type'] = df['amount'].apply(lambda x: 'credit' if x > 0 else 'debit')
@@ -449,7 +465,10 @@ class PatternRecognizer:
         if 'source_account_id' not in df.columns:
             df['source_account_id'] = 'default'
         
-        df['description_clean'] = df.get('description', '').fillna('').str.upper().str.strip()
+        if 'description' not in df.columns:
+            df['description'] = ''
+        
+        df['description_clean'] = df['description'].fillna('').astype(str).str.upper().str.strip()
         
         return df
     
