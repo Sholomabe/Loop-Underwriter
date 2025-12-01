@@ -121,10 +121,14 @@ with get_db() as db:
         st.metric("Status", f"{status_colors.get(deal.status, '⚪')} {deal.status}")
     
     with col3:
-        st.metric("Retry Count", deal.retry_count)
+        data = deal.extracted_data or {}
+        extraction_source = data.get('extraction_source', 'openai')
+        if extraction_source == 'koncile':
+            st.metric("Extraction", "📊 Koncile")
+        else:
+            st.metric("Extraction", "🤖 OpenAI")
     
     with col4:
-        data = deal.extracted_data or {}
         info_needed = data.get('info_needed', data)
         net_revenue = safe_float(info_needed.get('average_monthly_income', 0))
         current_payments = safe_float(info_needed.get('total_monthly_payments', 0))
@@ -139,6 +143,21 @@ with get_db() as db:
     
     if projected_balance < 0:
         st.error("⚠️ **INSUFFICIENT CASH FLOW** - Projected balance is negative after adding simulated diesel payment.")
+    
+    verification_data = data.get('verification', {})
+    if verification_data:
+        ver_is_valid = verification_data.get('is_valid', True)
+        ver_confidence = verification_data.get('confidence_score', 1.0)
+        ver_discrepancies = verification_data.get('discrepancies', [])
+        
+        if ver_is_valid:
+            st.success(f"✅ **Koncile Verification PASSED** - Confidence: {ver_confidence:.0%}")
+        else:
+            st.warning(f"⚠️ **Koncile Verification Found {len(ver_discrepancies)} Issues** - Confidence: {ver_confidence:.0%}")
+            with st.expander("View Discrepancies", expanded=False):
+                for d in ver_discrepancies:
+                    severity_icon = "🔴" if d.get('severity') == 'high' else "🟡"
+                    st.write(f"{severity_icon} **{d.get('field')}**: Expected ${d.get('summary_value', 0):,.2f}, Got ${d.get('calculated_value', 0):,.2f}")
     
     st.divider()
     

@@ -1,7 +1,7 @@
 # Human-in-the-Loop Underwriting Platform
 
 ## Overview
-This AI-powered underwriting platform automates document processing with human oversight and continuous learning. It leverages OpenAI's Vision API for data extraction, incorporates intelligent retry mechanisms, detects duplicate submissions, and enhances its accuracy through learning from human corrections. The platform's goal is to streamline the underwriting process, reduce manual effort, and improve decision-making accuracy by combining AI efficiency with human expertise.
+This AI-powered underwriting platform automates document processing with human oversight and continuous learning. It uses **Koncile API** as the primary extraction engine for bank statements, with built-in verification to catch OCR errors. The platform detects duplicate submissions, verifies extracted data against bank statement summaries, and enhances accuracy through learning from human corrections. The goal is to streamline MCA underwriting, reduce manual effort, and improve decision-making accuracy.
 
 ## User Preferences
 None specified yet.
@@ -15,10 +15,16 @@ The platform utilizes a multi-page Streamlit application for the frontend and a 
 - **Dynamic Configuration**: UI allows for real-time adjustments of underwriting rules and system settings without code changes.
 
 ### Technical Implementations
-- **Email Ingestion Pipeline**: A Flask webhook (`POST /incoming-email` on port 8080) processes email payloads, including PDF attachments, calculates SHA-256 hashes for duplicate detection, and initiates deal creation.
-- **Multi-Account Intelligence**: OCR extracts account numbers from PDFs, enabling automatic merging of related documents and flagging of unidentified sources.
-- **Transfer Hunter Algorithm**: Detects inter-account transfers by matching debits and credits across accounts within a configurable time window, excluding them from revenue calculations. It includes logic to differentiate explicit internal transfers from revenue-generating related entity transactions.
-- **Auto-Retry Verification Loop**: After initial Vision API extraction, a Python-based math verification step ensures data accuracy. Failed verifications trigger intelligent retries with targeted feedback to the AI (max 2 attempts) before flagging for human review.
+- **Email Ingestion Pipeline**: A Flask webhook (`POST /incoming-email` on port 8080) processes email payloads, including PDF attachments, calculates SHA-256 hashes for duplicate detection, and initiates deal creation with Koncile extraction.
+- **Koncile Extraction Flow**: 
+  1. PDF uploaded to Koncile API
+  2. Poll for completion (max 120 seconds)
+  3. Parse General_fields (summary) and Line_fields (transactions)
+  4. Auto-verify extracted transactions against bank summary
+  5. Set deal status based on verification confidence
+- **Statement Verification**: Compares extracted transactions against bank statement summary (deposits, withdrawals, checks, fees) with 1% tolerance. High-severity discrepancies (>$100) lower confidence score.
+- **Multi-Account Intelligence**: Koncile extracts account numbers from PDFs, enabling automatic merging of related documents and flagging of unidentified sources.
+- **Transfer Hunter Algorithm**: Detects inter-account transfers by matching debits and credits across accounts within a configurable time window, excluding them from revenue calculations.
 - **Few-Shot Learning System**: The system dynamically incorporates human corrections from `TrainingExamples` into AI prompts for future analyses, improving model accuracy over time.
 - **Forensic Trainer (Adversarial Training)**: A module designed for iterative AI improvement. It compares AI output against human-provided truth data, generates specific error-based prompts for the AI to self-audit, and saves learned patterns to `GoldStandard_Rules`. This includes comprehensive comparison of all extracted metrics (info_needed, positions, bank accounts).
 - **Pattern Memory (RAG)**: Stores and applies learned classification rules (`GoldStandard_Rules`) for transaction categorization, such as identifying specific Zelle payments as income.
@@ -66,11 +72,11 @@ The platform utilizes a multi-page Streamlit application for the frontend and a 
 - **Modularity**: Codebase is organized into distinct modules for database interaction (`database.py`, `models.py`), PDF processing (`pdf_processor.py`), AI integration (`openai_integration.py`), and core business logic (`transfer_hunter.py`, `verification.py`, `webhook_server.py`).
 
 ## External Dependencies
-- **OpenAI GPT-4o (Vision)**: Used for robust PDF document extraction, supporting both text and image analysis, returning structured JSON data.
-- **OpenAI GPT-5**: Employed for generating underwriting summaries and facilitating adversarial corrections, leveraging few-shot examples and learned patterns.
+- **Koncile API**: Primary extraction engine for bank statements. Extracts both summary data (General_fields) and transaction details (Line_fields) with confidence scoring.
+- **OpenAI GPT-4o**: Used for AI verification (second opinion), adversarial corrections, and pattern learning. No longer used for primary extraction.
 - **PostgreSQL**: The relational database management system used for storing all application data, hosted on Replit.
 - **Streamlit**: Python framework for building the interactive web application frontend.
 - **Flask**: Python micro-framework used for the backend webhook server handling email ingestion.
 - **PyPDF2**: Python library for working with PDF documents.
-- **Pillow (PIL Fork)**: Python Imaging Library used for image processing, particularly in OCR workflows.
-- **Pytesseract**: Python wrapper for Google's Tesseract-OCR Engine, used for optical character recognition on documents.
+- **Pillow (PIL Fork)**: Python Imaging Library used for image processing.
+- **Pytesseract**: Python wrapper for Google's Tesseract-OCR Engine, used for fallback OCR if needed.
