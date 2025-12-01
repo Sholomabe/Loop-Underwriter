@@ -61,61 +61,74 @@ class KoncileClient:
         """Check if API key is configured"""
         return bool(self.api_key)
     
-    def upload_document(self, file_path: str, template_id: str = "bank_statement") -> Dict:
+    def upload_document(self, file_path: str, folder_id: str = "", template_id: str = "") -> Dict:
         """
         Upload a bank statement document to Koncile for extraction
         
         Args:
             file_path: Path to PDF/image file
-            template_id: Koncile template ID for bank statements
+            folder_id: Optional folder identifier
+            template_id: Optional Koncile template ID (leave empty for auto-classification)
             
         Returns:
-            Dict with task_id for polling results
+            Dict with task_ids list for polling results
         """
         if not self.is_configured():
             raise ValueError("Koncile API key not configured. Set KONCILE_API_KEY environment variable.")
         
-        url = f"{self.base_url}/v1/documents/upload"
+        url = f"{self.base_url}/v1/upload_file/"
         
         with open(file_path, 'rb') as f:
-            files = {'file': f}
-            data = {'template_id': template_id}
+            files = {'files': (os.path.basename(file_path), f)}
+            data = {}
+            if folder_id:
+                data['folder_id'] = folder_id
+            if template_id:
+                data['template_id'] = template_id
+            
             response = requests.post(
                 url, 
                 headers={"Authorization": f"Bearer {self.api_key}"},
                 files=files,
-                data=data
+                data=data if data else None
             )
         
         response.raise_for_status()
         return response.json()
     
-    def get_task_status(self, task_id: str) -> Dict:
-        """Check the status of an extraction task"""
+    def get_task_results(self, task_id: str) -> Dict:
+        """
+        Fetch task results including status and extracted data
+        
+        Returns:
+            Dict containing:
+            - status: DONE, IN PROGRESS, DUPLICATE, or FAILED
+            - General_fields: Summary data with confidence scores
+            - Line_fields: Transaction data with confidence scores
+        """
         if not self.is_configured():
             raise ValueError("Koncile API key not configured.")
         
-        url = f"{self.base_url}/v1/tasks/{task_id}"
-        response = requests.get(url, headers=self.headers)
+        url = f"{self.base_url}/v1/fetch_tasks_results/"
+        params = {"task_id": f"{task_id}/"}
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "accept": "application/json"
+        }
+        response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
         return response.json()
+    
+    def get_task_status(self, task_id: str) -> Dict:
+        """Check the status of an extraction task (uses fetch_tasks_results)"""
+        return self.get_task_results(task_id)
     
     def get_extraction_results(self, task_id: str) -> Dict:
         """
         Get the full extraction results including General_fields and Line_fields
-        
-        Returns:
-            Dict containing:
-            - General_fields: Summary data (balances, totals, account info)
-            - Line_fields: Individual transactions
+        Alias for get_task_results for backwards compatibility
         """
-        if not self.is_configured():
-            raise ValueError("Koncile API key not configured.")
-        
-        url = f"{self.base_url}/v1/tasks/{task_id}/results"
-        response = requests.get(url, headers=self.headers)
-        response.raise_for_status()
-        return response.json()
+        return self.get_task_results(task_id)
     
     def parse_summary(self, general_fields: Dict) -> BankStatementSummary:
         """
@@ -540,9 +553,14 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[D
     
     try:
         upload_response = client.upload_document(file_path)
-        task_id = upload_response.get('task_id') or upload_response.get('id')
         
-        if not task_id:
+        task_ids = upload_response.get('task_ids', [])
+        if not task_ids:
+            task_id = upload_response.get('task_id') or upload_response.get('id')
+            if task_id:
+                task_ids = [task_id]
+        
+        if not task_ids:
             reasoning_parts.append(f"Upload response: {upload_response}")
             no_task_verification = VerificationResult(
                 is_valid=False,
@@ -569,19 +587,24 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[D
                 'other_liabilities': [],
             }, "\n".join(reasoning_parts), no_task_verification
         
+        task_id = task_ids[0]
         reasoning_parts.append(f"Upload successful. Task ID: {task_id}")
         
         start_time = time.time()
-        status = 'processing'
+        status = 'IN PROGRESS'
+        results = None
         
-        while status in ['processing', 'pending', 'queued'] and (time.time() - start_time) < max_poll_seconds:
+        while status == 'IN PROGRESS' and (time.time() - start_time) < max_poll_seconds:
             time.sleep(2)
-            status_response = client.get_task_status(task_id)
-            status = status_response.get('status', 'unknown')
+            results = client.get_task_results(task_id)
+            status = results.get('status', 'unknown')
             reasoning_parts.append(f"Poll status: {status}")
         
-        if status != 'completed':
+        if status not in ['DONE', 'done', 'completed']:
             reasoning_parts.append(f"Extraction did not complete. Final status: {status}")
+            status_message = results.get('status_message', '') if results else ''
+            if status_message:
+                reasoning_parts.append(f"Status message: {status_message}")
             incomplete_verification = VerificationResult(
                 is_valid=False,
                 discrepancies=[],
@@ -607,8 +630,10 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[D
                 'other_liabilities': [],
             }, "\n".join(reasoning_parts), incomplete_verification
         
-        results = client.get_extraction_results(task_id)
         reasoning_parts.append("Extraction completed successfully")
+        
+        if not results:
+            results = client.get_task_results(task_id)
         
         general_fields = results.get('General_fields', results.get('general_fields', {}))
         line_fields = results.get('Line_fields', results.get('line_fields', {}))
