@@ -220,6 +220,186 @@ def incoming_email():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+@app.route('/gmail-webhook', methods=['POST'])
+def gmail_webhook():
+    """
+    Webhook endpoint specifically for Google Apps Script integration.
+    Receives emails with a specific Gmail label and processes PDF attachments.
+    
+    Expected JSON payload from Google Apps Script:
+    {
+        "sender": "sender@example.com",
+        "subject": "Bank Statement",
+        "body": "Email body text",
+        "message_id": "gmail_message_id",
+        "label": "Process",
+        "attachments": [
+            {
+                "filename": "statement.pdf",
+                "content": "<base64 encoded PDF>",
+                "mimeType": "application/pdf"
+            }
+        ]
+    }
+    """
+    try:
+        data = request.json
+        
+        if not data:
+            return jsonify({"error": "No JSON payload received"}), 400
+        
+        sender = data.get('sender', 'unknown@example.com')
+        subject = data.get('subject', 'No Subject')
+        body = data.get('body', '')
+        message_id = data.get('message_id', '')
+        label = data.get('label', 'Unknown')
+        attachments = data.get('attachments', [])
+        
+        # Filter to only PDF attachments
+        pdf_attachments = [
+            a for a in attachments 
+            if a.get('mimeType', '').lower() == 'application/pdf' 
+            or a.get('filename', '').lower().endswith('.pdf')
+        ]
+        
+        if not pdf_attachments:
+            return jsonify({
+                "status": "skipped",
+                "message": "No PDF attachments found in email"
+            }), 200
+        
+        processed_deals = []
+        
+        with get_db() as db:
+            for attachment in pdf_attachments:
+                # Save attachment to disk
+                file_path = save_attachment(attachment, 0)
+                
+                # Calculate PDF hash for duplicate detection
+                pdf_hash = calculate_pdf_hash(file_path)
+                
+                # Check if this PDF already exists
+                existing_pdf = db.query(PDFFile).filter(PDFFile.file_hash == pdf_hash).first()
+                
+                if existing_pdf:
+                    existing_deal = existing_pdf.deal
+                    processed_deals.append({
+                        "status": "duplicate",
+                        "filename": attachment.get('filename'),
+                        "original_deal_id": existing_deal.id
+                    })
+                    continue
+                
+                # Extract account number
+                account_number, account_status = extract_account_number_from_pdf(file_path)
+                
+                # Create new deal with Gmail metadata
+                new_deal = Deal(
+                    sender=sender,
+                    subject=f"[Gmail:{label}] {subject}",
+                    email_body=f"Gmail Message ID: {message_id}\n\n{body}",
+                    status="Processing",
+                    created_at=datetime.utcnow()
+                )
+                db.add(new_deal)
+                db.flush()
+                
+                # Create PDF file record
+                pdf_file = PDFFile(
+                    deal_id=new_deal.id,
+                    filename=attachment.get('filename', 'attachment.pdf'),
+                    file_path=file_path,
+                    file_hash=pdf_hash,
+                    account_number=account_number,
+                    account_status=account_status,
+                    uploaded_at=datetime.utcnow()
+                )
+                db.add(pdf_file)
+                db.flush()
+                
+                # Process PDF with Koncile extraction
+                extracted_data, reasoning_log, verification_result = extract_with_koncile(file_path)
+                
+                # Check for extraction errors
+                if extracted_data.get('error'):
+                    final_status = "Extraction Failed"
+                    reasoning_log += f"\n\nExtraction Error: {extracted_data.get('error')}"
+                elif verification_result.is_valid:
+                    final_status = "Pending Approval"
+                elif verification_result.confidence_score >= 0.7:
+                    final_status = "Pending Approval"
+                elif verification_result.confidence_score >= 0.5:
+                    final_status = "Needs Human Review"
+                else:
+                    final_status = "Needs Human Review"
+                
+                # Update account number from Koncile if available
+                koncile_account = extracted_data.get('koncile_summary', {}).get('account_number') or account_number
+                
+                # Store transactions
+                transactions = extracted_data.get('transactions', [])
+                if transactions:
+                    transfers = find_inter_account_transfers(transactions)
+                    for txn in transactions:
+                        txn_date = None
+                        if txn.get('date'):
+                            for fmt in ['%Y-%m-%d', '%m/%d/%Y', '%m/%d/%y', '%d/%m/%Y']:
+                                try:
+                                    txn_date = datetime.strptime(str(txn['date']), fmt)
+                                    break
+                                except ValueError:
+                                    continue
+                        if txn_date is None:
+                            txn_date = datetime.utcnow()
+                        
+                        transaction = Transaction(
+                            deal_id=new_deal.id,
+                            source_account_id=txn.get('source_account_id'),
+                            transaction_date=txn_date,
+                            description=txn.get('description', ''),
+                            amount=txn.get('amount', 0),
+                            transaction_type=txn.get('type', 'unknown'),
+                            is_internal_transfer=txn.get('is_internal_transfer', False),
+                            matched_transfer_id=txn.get('matched_transfer_id'),
+                            category=txn.get('category', 'other'),
+                            created_at=datetime.utcnow()
+                        )
+                        db.add(transaction)
+                
+                # Update deal with extracted data
+                new_deal.extracted_data = extracted_data
+                new_deal.ai_reasoning_log = reasoning_log
+                new_deal.retry_count = 0
+                new_deal.status = final_status
+                new_deal.updated_at = datetime.utcnow()
+                
+                if koncile_account and koncile_account != account_number:
+                    pdf_file.account_number = koncile_account
+                
+                processed_deals.append({
+                    "status": "success",
+                    "filename": attachment.get('filename'),
+                    "deal_id": new_deal.id,
+                    "final_status": final_status,
+                    "confidence_score": verification_result.confidence_score
+                })
+            
+            db.commit()
+        
+        return jsonify({
+            "status": "success",
+            "message": f"Processed {len(processed_deals)} attachment(s) from Gmail",
+            "gmail_label": label,
+            "deals": processed_deals
+        }), 200
+        
+    except Exception as e:
+        print(f"Error processing Gmail webhook: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint."""
