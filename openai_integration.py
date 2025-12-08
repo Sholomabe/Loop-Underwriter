@@ -238,7 +238,7 @@ def classify_position(description: str) -> str:
     return 'other'
 
 
-def get_mca_confidence(description: str, transactions: list = None) -> dict:
+def get_mca_confidence(description: str, transactions: Optional[list] = None) -> dict:
     """
     Get MCA detection confidence with reasoning.
     
