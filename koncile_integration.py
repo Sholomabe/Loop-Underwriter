@@ -139,7 +139,7 @@ class KoncileClient:
         Returns:
             BankStatementSummary object with extracted values
         """
-        def get_value(field_name: str, default: Any = None, alternates: List[str] = None) -> Any:
+        def get_value(field_name: str, default: Any = None, alternates: Optional[List[str]] = None) -> Any:
             """Get value with fallback to alternate field names"""
             names_to_try = [field_name] + (alternates or [])
             for name in names_to_try:
