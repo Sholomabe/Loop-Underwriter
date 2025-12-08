@@ -647,8 +647,38 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 1800) -> Tuple[
         if not results:
             results = client.get_task_results(task_id)
         
+        # DEBUG: Log raw Koncile response structure
+        import json
+        print(f"\n{'='*60}")
+        print(f"DEBUG: Raw Koncile Response Keys: {list(results.keys())}")
+        for key in results.keys():
+            val = results[key]
+            if isinstance(val, dict):
+                print(f"  {key}: dict with keys {list(val.keys())[:10]}...")
+            elif isinstance(val, list):
+                print(f"  {key}: list with {len(val)} items")
+            else:
+                print(f"  {key}: {type(val).__name__} = {str(val)[:100]}")
+        
+        # Check for nested structure
+        if 'result' in results:
+            print(f"DEBUG: Found 'result' key - checking nested structure...")
+            nested = results['result']
+            if isinstance(nested, dict):
+                print(f"DEBUG: Nested result keys: {list(nested.keys())}")
+        
+        print(f"{'='*60}\n")
+        
         general_fields = results.get('General_fields', results.get('general_fields', {}))
         line_fields = results.get('Line_fields', results.get('line_fields', {}))
+        
+        # DEBUG: Log what we found
+        print(f"DEBUG: General_fields has {len(general_fields)} keys: {list(general_fields.keys())[:10]}")
+        print(f"DEBUG: Line_fields has {len(line_fields)} keys: {list(line_fields.keys())[:10]}")
+        if line_fields:
+            for k, v in list(line_fields.items())[:3]:
+                if isinstance(v, list):
+                    print(f"DEBUG: Line_fields['{k}']: {len(v)} items")
         
         summary = client.parse_summary(general_fields)
         transactions = client.parse_transactions(line_fields)
