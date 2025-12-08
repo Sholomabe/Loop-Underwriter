@@ -139,11 +139,16 @@ class KoncileClient:
         Returns:
             BankStatementSummary object with extracted values
         """
-        def get_value(field_name: str, default: Any = None) -> Any:
-            field = general_fields.get(field_name, {})
-            if isinstance(field, dict):
-                return field.get('value', default)
-            return field if field is not None else default
+        def get_value(field_name: str, default: Any = None, alternates: List[str] = None) -> Any:
+            """Get value with fallback to alternate field names"""
+            names_to_try = [field_name] + (alternates or [])
+            for name in names_to_try:
+                field = general_fields.get(name, {})
+                if isinstance(field, dict) and field.get('value') is not None:
+                    return field.get('value', default)
+                elif field and field != {}:
+                    return field
+            return default
         
         def parse_amount(value: Any) -> float:
             if isinstance(value, (int, float)):
@@ -166,22 +171,32 @@ class KoncileClient:
                     return 0
             return 0
         
+        # Parse statement period - Koncile returns "01/09/2025 to 30/09/2025"
+        statement_period = str(get_value('Statement period', '', ['Statement_Period']))
+        period_start = ''
+        period_end = ''
+        if ' to ' in statement_period:
+            parts = statement_period.split(' to ')
+            period_start = parts[0].strip()
+            period_end = parts[1].strip() if len(parts) > 1 else ''
+        
         return BankStatementSummary(
-            beginning_balance=parse_amount(get_value('Opening_Balance', 0)),
-            ending_balance=parse_amount(get_value('Closing_Balance', 0)),
-            total_deposits=parse_amount(get_value('Total_Deposits', 0)),
-            total_deposits_count=parse_count(get_value('Deposits_Count', 0)),
-            total_withdrawals=parse_amount(get_value('Total_Withdrawals', 0)),
-            total_withdrawals_count=parse_count(get_value('Withdrawals_Count', 0)),
-            total_checks=parse_amount(get_value('Total_Checks', 0)),
-            total_checks_count=parse_count(get_value('Checks_Count', 0)),
-            total_fees=parse_amount(get_value('Total_Fees', 0)),
-            total_fees_count=parse_count(get_value('Fees_Count', 0)),
-            statement_period_start=str(get_value('Statement_Period_Start', '')),
-            statement_period_end=str(get_value('Statement_Period_End', '')),
-            account_holder=str(get_value('Account_Holder', '')),
-            account_number=str(get_value('Account_Number', '')),
-            bank_name=str(get_value('Bank_Name', ''))
+            # Koncile uses spaces in field names, not underscores
+            beginning_balance=parse_amount(get_value('Beginning Balance', 0, ['Opening_Balance', 'Beginning balance'])),
+            ending_balance=parse_amount(get_value('Ending Balance', 0, ['Closing_Balance', 'Ending balance'])),
+            total_deposits=parse_amount(get_value('Deposits and Additions', 0, ['Total_Deposits', 'Total Deposits', 'Total deposits'])),
+            total_deposits_count=parse_count(get_value('Deposits Count', 0, ['Deposits_Count', 'Number of Deposits'])),
+            total_withdrawals=parse_amount(get_value('Withdrawals and Subtractions', 0, ['Total_Withdrawals', 'Total Withdrawals', 'Electronic Withdrawals'])),
+            total_withdrawals_count=parse_count(get_value('Withdrawals Count', 0, ['Withdrawals_Count', 'Number of Withdrawals'])),
+            total_checks=parse_amount(get_value('Checks Paid', 0, ['Total_Checks', 'Total Checks', 'Checks'])),
+            total_checks_count=parse_count(get_value('Checks Count', 0, ['Checks_Count', 'Number of Checks'])),
+            total_fees=parse_amount(get_value('Total Fees', 0, ['Total_Fees', 'Fees', 'Service Fees'])),
+            total_fees_count=parse_count(get_value('Fees Count', 0, ['Fees_Count'])),
+            statement_period_start=period_start or str(get_value('Statement_Period_Start', '')),
+            statement_period_end=period_end or str(get_value('Statement_Period_End', '')),
+            account_holder=str(get_value('Account holder name', '', ['Account_Holder', 'Account Holder'])),
+            account_number=str(get_value('Account number', '', ['Account_Number', 'Account Number'])),
+            bank_name=str(get_value('Bank name', '', ['Bank_Name', 'Bank Name']))
         )
     
     def parse_transactions(self, line_fields: Dict) -> List[Dict]:
@@ -193,10 +208,11 @@ class KoncileClient:
         """
         transactions = []
         
-        dates = line_fields.get('Date', [])
-        amounts = line_fields.get('Amount', [])
-        types = line_fields.get('Transaction_Type', [])
-        descriptions = line_fields.get('Description', [])
+        # Koncile uses these field names (with spaces, not underscores)
+        dates = line_fields.get('Transaction date', line_fields.get('Date', []))
+        amounts = line_fields.get('Transaction amount', line_fields.get('Amount', []))
+        types = line_fields.get('Transaction type', line_fields.get('Transaction_Type', []))
+        descriptions = line_fields.get('Transaction description', line_fields.get('Description', []))
         
         num_transactions = max(len(dates), len(amounts), len(types), len(descriptions))
         
