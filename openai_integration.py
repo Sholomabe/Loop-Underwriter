@@ -17,13 +17,102 @@ openai = OpenAI(
     base_url=AI_INTEGRATIONS_OPENAI_BASE_URL
 )
 
-# MCA Position Detection Keywords - ONLY these count as "Positions"
-MCA_KEYWORDS = [
-    "CAPITAL", "FUNDING", "ADVANCE", "FINANCING", "MANAGEMENT",
-    "CREDIBLY", "FORWARD", "ONDECK", "CAN CAPITAL", "HEADWAY",
-    "KALAMATA", "HUNTER", "KING", "LIBERTAS", "YELLOWSTONE",
-    "CLEARVIEW", "BIZFUND", "RAPID", "MERCHANT", "FACTOR",
-    "MCA", "CASH ADVANCE", "DAILY ACH", "FUNDER"
+# =============================================================================
+# SMART MCA DETECTION SYSTEM
+# 3-Layer approach: Whitelist → Blacklist → Pattern Detection
+# =============================================================================
+
+# LAYER 1: MCA WHITELIST - Known MCA lenders (always flag as MCA)
+# These are confirmed MCA/merchant cash advance companies
+MCA_WHITELIST = [
+    # User-confirmed MCA lenders
+    "FORA FINANCIAL", "FORA FIN",
+    "SPARTAN CAP", "SPARTAN CAPITAL",
+    "EBF HOLDINGS", "EBF",
+    "MCA SERVICING", "MCA SERVICE",
+    
+    # Well-known MCA lenders
+    "CREDIBLY", "CREDIBLY FUND",
+    "ONDECK", "ON DECK", "ONDECK CAPITAL",
+    "CAN CAPITAL", "CANCAPITAL",
+    "HEADWAY CAPITAL", "HEADWAY",
+    "KALAMATA", "KALAMATA CAPITAL",
+    "LIBERTAS", "LIBERTAS FUNDING",
+    "YELLOWSTONE", "YELLOWSTONE CAPITAL",
+    "CLEARVIEW", "CLEARVIEW FUNDING",
+    "BIZFUND", "BIZ FUND", "BIZ2CREDIT",
+    "RAPID ADVANCE", "RAPID CAPITAL", "RAPIDADVANCE",
+    "MERCHANT CASH", "MERCHANT ADVANCE",
+    "FORWARD FINANCING", "FORWARD FIN",
+    "KING TRADE", "KINGTRADE",
+    "LENDISTRY",
+    "FUNDBOX",
+    "BLUEVINE", "BLUE VINE",
+    "KABBAGE",
+    "PAYABILITY",
+    "BEHALF",
+    "NATIONAL FUNDING", "NATIONALFUNDING",
+    "RELIANT FUNDING", "RELIANTFUNDING",
+    "UNITED CAPITAL", "UNITED CAP SOURCE",
+    "PEARL CAPITAL", "PEARLCAPITAL",
+    "GREEN CAPITAL", "GREENCAPITAL",
+    "WORLD BUSINESS", "WORLD BUS LENDERS",
+    "CFG MERCHANT", "CFG",
+    "SQUARE CAPITAL", "SQ CAPITAL",
+    "SHOPIFY CAPITAL",
+    "AMAZON LENDING",
+    "PAYPAL WORKING", "PAYPAL LOAN",
+    "STRIPE CAPITAL",
+]
+
+# LAYER 2: MCA BLACKLIST - Known false positives (never flag as MCA)
+# These contain MCA-like keywords but are NOT MCAs
+MCA_BLACKLIST = [
+    # Credit cards (contain "CAPITAL" but are cards, not MCA)
+    "CAPITAL ONE", "CAPITALONE", "CAP ONE",
+    
+    # Business loans/financing (not MCA structure)
+    "INTUIT FINANCING", "INTUIT FIN", "QUICKBOOKS",
+    "WEBBANK", "WEB BANK",
+    "SOFI", "SOFI LENDING",
+    "LENDING CLUB", "LENDINGCLUB",
+    "PROSPER",
+    "UPSTART",
+    
+    # Credit card companies
+    "AMERICAN EXPRESS", "AMEX",
+    "DISCOVER", "DISCOVER CARD",
+    "CHASE CARD", "CHASE CREDIT",
+    "VISA", "MASTERCARD",
+    "SYNCHRONY",
+    "CITI CARD", "CITICARD",
+    "BARCLAYS",
+    "BANK OF AMERICA", "BOFA",
+    
+    # Insurance companies
+    "PROGRESSIVE", "STATE FARM", "ALLSTATE", "GEICO", "LIBERTY MUTUAL",
+    "UTICA", "AMTRUST", "NATIONWIDE", "FARMERS", "TRAVELERS",
+    "HARTFORD", "ERIE INSURANCE",
+    
+    # Payroll / HR
+    "ADP", "PAYCHEX", "GUSTO", "PAYLOCITY", "PAYROLL",
+    
+    # Utilities
+    "ELECTRIC", "GAS COMPANY", "WATER COMPANY", "UTILITY",
+    "COMCAST", "VERIZON", "ATT", "AT&T", "TMOBILE", "T-MOBILE",
+    
+    # Common business expenses
+    "RENT", "LEASE", "LANDLORD",
+    "AMAZON PURCHASE", "AMAZON PRIME", "AMAZON ORDER",
+    "OFFICE DEPOT", "STAPLES",
+    "HOME DEPOT", "LOWES",
+]
+
+# LAYER 3: Pattern-based keywords (used with pattern detection)
+# Generic keywords that MIGHT indicate MCA - require pattern validation
+MCA_PATTERN_KEYWORDS = [
+    "CAPITAL", "FUNDING", "ADVANCE", "FINANCING", "FUNDER",
+    "DAILY ACH", "ACH DEBIT", "FACTOR", "FACTORING",
 ]
 
 # Operating Expense Keywords - These go to "Other Liabilities", NOT Positions
@@ -31,14 +120,100 @@ OPERATING_EXPENSE_KEYWORDS = [
     "DISCOVER", "AMEX", "AMERICAN EXPRESS", "CHASE CARD", "CHASE CREDIT",
     "INSURANCE", "UTICA", "AMTRUST", "VISA", "MASTERCARD",
     "PROGRESSIVE", "STATE FARM", "ALLSTATE", "GEICO", "LIBERTY MUTUAL",
-    "CREDIT CARD", "CARD SERVICES"
+    "CREDIT CARD", "CARD SERVICES", "CAPITAL ONE", "INTUIT"
 ]
+
+# Legacy compatibility - combine whitelist for simple matching
+MCA_KEYWORDS = MCA_WHITELIST + MCA_PATTERN_KEYWORDS
+
+
+def is_mca_whitelist(description: str) -> bool:
+    """Check if transaction matches a known MCA lender (definite MCA)."""
+    desc_upper = description.upper()
+    return any(lender in desc_upper for lender in MCA_WHITELIST)
+
+
+def is_mca_blacklist(description: str) -> bool:
+    """Check if transaction matches a known false positive (definitely NOT MCA)."""
+    desc_upper = description.upper()
+    return any(excluded in desc_upper for excluded in MCA_BLACKLIST)
+
+
+def has_mca_pattern_keyword(description: str) -> bool:
+    """Check if transaction has generic MCA-like keywords (needs pattern validation)."""
+    desc_upper = description.upper()
+    return any(kw in desc_upper for kw in MCA_PATTERN_KEYWORDS)
 
 
 def is_mca_position(description: str) -> bool:
-    """Check if a transaction description matches MCA position keywords."""
+    """
+    Smart MCA detection using 3-layer logic:
+    1. Check whitelist first (known MCA lenders) → True
+    2. Check blacklist (known false positives) → False
+    3. Check pattern keywords (might be MCA, needs validation)
+    
+    For pattern detection to confirm, use is_likely_mca_pattern() with transaction data.
+    """
     desc_upper = description.upper()
-    return any(kw in desc_upper for kw in MCA_KEYWORDS)
+    
+    # Layer 1: Whitelist - definite MCA
+    if is_mca_whitelist(description):
+        return True
+    
+    # Layer 2: Blacklist - definite NOT MCA
+    if is_mca_blacklist(description):
+        return False
+    
+    # Layer 3: Pattern keywords - might be MCA (conservative: return True for now)
+    # Full pattern validation should be done with transaction frequency data
+    if has_mca_pattern_keyword(description):
+        return True
+    
+    return False
+
+
+def is_likely_mca_pattern(transactions: list, min_payments: int = 10, 
+                          amount_variance_threshold: float = 0.15) -> bool:
+    """
+    Analyze transaction patterns to determine if they look like MCA payments.
+    
+    MCA characteristics:
+    - Regular frequency (daily Mon-Fri or weekly)
+    - Consistent amounts (low variance)
+    - Multiple payments over time
+    - Typical amount range ($100-$2,000 daily, $500-$10,000 weekly)
+    
+    Args:
+        transactions: List of dicts with 'amount' and optionally 'date'
+        min_payments: Minimum number of payments to consider as MCA pattern
+        amount_variance_threshold: Max coefficient of variation for amounts
+        
+    Returns:
+        True if pattern looks like MCA payments
+    """
+    if len(transactions) < min_payments:
+        return False
+    
+    amounts = [abs(t.get('amount', 0)) for t in transactions if t.get('amount')]
+    if not amounts:
+        return False
+    
+    avg_amount = sum(amounts) / len(amounts)
+    
+    # Check amount range (typical MCA: $100-$2,500 per payment)
+    if avg_amount < 50 or avg_amount > 5000:
+        return False
+    
+    # Check amount consistency (MCA payments are usually very consistent)
+    if avg_amount > 0:
+        variance = sum((a - avg_amount) ** 2 for a in amounts) / len(amounts)
+        std_dev = variance ** 0.5
+        coef_variation = std_dev / avg_amount
+        
+        if coef_variation > amount_variance_threshold:
+            return False
+    
+    return True
 
 
 def is_operating_expense(description: str) -> bool:
@@ -49,14 +224,82 @@ def is_operating_expense(description: str) -> bool:
 
 def classify_position(description: str) -> str:
     """
-    Classify a debit as either 'mca_position' or 'operating_expense'.
-    Returns 'mca_position' only if it matches MCA keywords and NOT operating expense keywords.
+    Classify a debit using smart 3-layer MCA detection.
+    Returns 'mca_position' only if it's a known MCA or matches patterns.
     """
-    if is_operating_expense(description):
+    # First check blacklist/operating expenses
+    if is_mca_blacklist(description) or is_operating_expense(description):
         return 'operating_expense'
+    
+    # Then check for MCA
     if is_mca_position(description):
         return 'mca_position'
+    
     return 'other'
+
+
+def get_mca_confidence(description: str, transactions: list = None) -> dict:
+    """
+    Get MCA detection confidence with reasoning.
+    
+    Returns:
+        dict with 'is_mca', 'confidence', 'reason', 'layer'
+    """
+    desc_upper = description.upper()
+    
+    # Layer 1: Whitelist
+    if is_mca_whitelist(description):
+        matched = [l for l in MCA_WHITELIST if l in desc_upper][0]
+        return {
+            'is_mca': True,
+            'confidence': 'high',
+            'reason': f'Known MCA lender: {matched}',
+            'layer': 'whitelist'
+        }
+    
+    # Layer 2: Blacklist
+    if is_mca_blacklist(description):
+        matched = [b for b in MCA_BLACKLIST if b in desc_upper][0]
+        return {
+            'is_mca': False,
+            'confidence': 'high',
+            'reason': f'Known non-MCA (blacklisted): {matched}',
+            'layer': 'blacklist'
+        }
+    
+    # Layer 3: Pattern detection
+    if has_mca_pattern_keyword(description):
+        matched = [k for k in MCA_PATTERN_KEYWORDS if k in desc_upper][0]
+        
+        # If we have transaction data, validate the pattern
+        if transactions and is_likely_mca_pattern(transactions):
+            return {
+                'is_mca': True,
+                'confidence': 'medium',
+                'reason': f'Pattern keyword "{matched}" + MCA-like payment pattern',
+                'layer': 'pattern'
+            }
+        elif transactions:
+            return {
+                'is_mca': False,
+                'confidence': 'low',
+                'reason': f'Has keyword "{matched}" but payment pattern not MCA-like',
+                'layer': 'pattern'
+            }
+        else:
+            return {
+                'is_mca': True,
+                'confidence': 'low',
+                'reason': f'Pattern keyword "{matched}" (no transaction data to validate)',
+                'layer': 'pattern'
+            }
+    
+    return {
+        'is_mca': False,
+        'confidence': 'high',
+        'reason': 'No MCA indicators found',
+        'layer': 'none'
+    }
 
 
 # PDF Chunking Configuration
