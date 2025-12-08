@@ -26,10 +26,10 @@ openai = OpenAI(
 # These are confirmed MCA/merchant cash advance companies
 MCA_WHITELIST = [
     # User-confirmed MCA lenders
-    "FORA FINANCIAL", "FORA FIN",
+    "FORA FINANCIAL", "FORAFINANCIAL", "FORA FIN",
     "SPARTAN CAP", "SPARTAN CAPITAL",
-    "EBF HOLDINGS", "EBF",
-    "MCA SERVICING", "MCA SERVICE",
+    "EBF HOLDINGS", "EBF HOLDINGS EBF", "EBF DEBIT",
+    "MCA SERVICING", "MCA SERVICE", "MCA SERVIC",
     
     # Well-known MCA lenders
     "CREDIBLY", "CREDIBLY FUND",
