@@ -717,8 +717,31 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 1800) -> Tuple[
             for d in verification.discrepancies:
                 reasoning_parts.append(f"  - {d['field']}: Expected ${d['summary_value']:,.2f}, Got ${d['calculated_value']:,.2f}")
         
-        deposits = [t for t in transactions if 'credit' in str(t.get('type', '')).lower() or 'deposit' in str(t.get('type', '')).lower()]
-        withdrawals = [t for t in transactions if 'debit' in str(t.get('type', '')).lower() or 'withdrawal' in str(t.get('type', '')).lower()]
+        # Detect deposits vs withdrawals based on transaction type text
+        # Koncile uses various type names like "Other Withdrawal", "Deposit", "Credit", "ACH Credit", etc.
+        def is_deposit(t):
+            t_type = str(t.get('type', '')).lower()
+            t_desc = str(t.get('description', '')).lower()
+            # Credits, deposits, additions are positive cash flow
+            deposit_keywords = ['credit', 'deposit', 'addition', 'received', 'incoming']
+            withdrawal_keywords = ['withdrawal', 'debit', 'payment', 'purchase', 'check', 'transfer out', 'fee']
+            
+            # Check for deposit keywords
+            if any(kw in t_type for kw in deposit_keywords):
+                return True
+            # If it has withdrawal keywords, it's not a deposit
+            if any(kw in t_type for kw in withdrawal_keywords):
+                return False
+            # Fallback: look at amount sign if available (positive could be deposit)
+            return False  # Default to not a deposit if unclear
+        
+        def is_withdrawal(t):
+            t_type = str(t.get('type', '')).lower()
+            withdrawal_keywords = ['withdrawal', 'debit', 'payment', 'purchase', 'check', 'transfer out', 'fee', 'paid']
+            return any(kw in t_type for kw in withdrawal_keywords)
+        
+        deposits = [t for t in transactions if is_deposit(t)]
+        withdrawals = [t for t in transactions if is_withdrawal(t)]
         
         total_deposits = sum(abs(t['amount']) for t in deposits)
         total_withdrawals = sum(abs(t['amount']) for t in withdrawals)
