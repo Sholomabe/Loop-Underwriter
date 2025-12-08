@@ -501,7 +501,7 @@ def verify_csv_against_summary(
     return verifier.verify(summary, csv_transactions)
 
 
-def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[Dict, str, VerificationResult]:
+def extract_with_koncile(file_path: str, max_poll_seconds: int = 1800) -> Tuple[Dict, str, VerificationResult]:
     """
     Complete extraction flow using Koncile API
     
@@ -512,7 +512,7 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[D
     
     Args:
         file_path: Path to PDF file
-        max_poll_seconds: Maximum time to wait for extraction
+        max_poll_seconds: Maximum time to wait for extraction (default: 30 minutes)
         
     Returns:
         Tuple of (extracted_data, reasoning_log, verification_result)
@@ -588,19 +588,32 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 120) -> Tuple[D
         
         task_id = task_ids[0]
         reasoning_parts.append(f"Upload successful. Task ID: {task_id}")
+        reasoning_parts.append(f"[RECOVERY INFO] If this times out, use task_id: {task_id} to resume")
+        print(f"Koncile Task ID: {task_id} - polling for results...")
         
         start_time = time.time()
         status = 'IN PROGRESS'
         results = None
+        poll_count = 0
+        last_log_time = start_time
         
         while status == 'IN PROGRESS' and (time.time() - start_time) < max_poll_seconds:
-            time.sleep(2)
+            time.sleep(5)  # Poll every 5 seconds
+            poll_count += 1
             results = client.get_task_results(task_id)
             status = results.get('status', 'unknown')
-            reasoning_parts.append(f"Poll status: {status}")
+            
+            elapsed = int(time.time() - start_time)
+            # Log progress every 30 seconds to avoid spam
+            if time.time() - last_log_time >= 30:
+                reasoning_parts.append(f"[{elapsed}s] Still waiting... Status: {status}")
+                print(f"Koncile [{elapsed}s]: Status = {status}")
+                last_log_time = time.time()
         
-        if status not in ['DONE', 'done', 'completed']:
-            reasoning_parts.append(f"Extraction did not complete. Final status: {status}")
+        # DUPLICATE status means Koncile cached the results from a previous upload - still valid
+        if status not in ['DONE', 'done', 'completed', 'DUPLICATE']:
+            elapsed = int(time.time() - start_time)
+            reasoning_parts.append(f"Extraction did not complete after {elapsed}s. Final status: {status}")
             status_message = results.get('status_message', '') if results else ''
             if status_message:
                 reasoning_parts.append(f"Status message: {status_message}")
