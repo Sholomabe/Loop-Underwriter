@@ -547,10 +547,23 @@ with st.form("upload_training_deal"):
                     
                     # Save transactions
                     for txn in all_transactions:
+                        # Parse date with flexible format support
+                        date_str = txn.get('date', '2024-01-01')
+                        txn_date = None
+                        date_formats = ['%d/%m/%Y', '%Y-%m-%d', '%m/%d/%Y', '%Y/%m/%d', '%d-%m-%Y']
+                        for fmt in date_formats:
+                            try:
+                                txn_date = datetime.strptime(date_str, fmt)
+                                break
+                            except ValueError:
+                                continue
+                        if txn_date is None:
+                            txn_date = datetime(2024, 1, 1)  # Fallback
+                        
                         transaction = Transaction(
                             deal_id=training_deal.id,
                             source_account_id=txn.get('source_account_id'),
-                            transaction_date=datetime.strptime(txn.get('date', '2024-01-01'), '%Y-%m-%d'),
+                            transaction_date=txn_date,
                             description=txn.get('description', ''),
                             amount=txn.get('amount', 0),
                             transaction_type=txn.get('type', 'unknown'),
