@@ -145,18 +145,22 @@ def has_mca_pattern_keyword(description: str) -> bool:
     return any(kw in desc_upper for kw in MCA_PATTERN_KEYWORDS)
 
 
-def is_mca_position(description: str) -> bool:
+def is_mca_position(description: str, transactions: Optional[list] = None) -> bool:
     """
     Smart MCA detection using 3-layer logic:
     1. Check whitelist first (known MCA lenders) → True
     2. Check blacklist (known false positives) → False
-    3. Check pattern keywords (might be MCA, needs validation)
+    3. Check pattern keywords + validate with transaction data → True only if pattern validates
     
-    For pattern detection to confirm, use is_likely_mca_pattern() with transaction data.
+    Args:
+        description: Transaction description to check
+        transactions: Optional list of transactions for pattern validation
+                     (required for Layer 3 pattern-based detection)
+    
+    Returns:
+        True if definitely or likely MCA, False otherwise
     """
-    desc_upper = description.upper()
-    
-    # Layer 1: Whitelist - definite MCA
+    # Layer 1: Whitelist - definite MCA (no transaction data needed)
     if is_mca_whitelist(description):
         return True
     
@@ -164,11 +168,29 @@ def is_mca_position(description: str) -> bool:
     if is_mca_blacklist(description):
         return False
     
-    # Layer 3: Pattern keywords - might be MCA (conservative: return True for now)
-    # Full pattern validation should be done with transaction frequency data
+    # Layer 3: Pattern keywords - ONLY flag as MCA if transaction pattern validates
+    # This prevents false positives like "CAPITAL EQUIPMENT LEASE"
     if has_mca_pattern_keyword(description):
-        return True
+        # If we have transaction data, validate the pattern
+        if transactions and is_likely_mca_pattern(transactions):
+            return True
+        # Without transaction data, be conservative - don't assume it's MCA
+        # The caller should use is_mca_position_with_pattern() for full validation
+        return False
     
+    return False
+
+
+def is_mca_position_simple(description: str) -> bool:
+    """
+    Simple MCA detection using only whitelist/blacklist (no pattern validation).
+    Use this when you don't have transaction history available.
+    
+    Returns True ONLY for known MCA lenders (whitelist).
+    Returns False for blacklisted merchants and unknown merchants.
+    """
+    if is_mca_whitelist(description):
+        return True
     return False
 
 
@@ -222,18 +244,35 @@ def is_operating_expense(description: str) -> bool:
     return any(kw in desc_upper for kw in OPERATING_EXPENSE_KEYWORDS)
 
 
-def classify_position(description: str) -> str:
+def classify_position(description: str, transactions: Optional[list] = None) -> str:
     """
     Classify a debit using smart 3-layer MCA detection.
-    Returns 'mca_position' only if it's a known MCA or matches patterns.
+    Returns 'mca_position' only if it's a known MCA or matches validated patterns.
+    
+    Args:
+        description: Transaction description
+        transactions: Optional list of transactions for pattern validation
+    
+    Returns:
+        'mca_position' - Known MCA lender or validated MCA pattern
+        'operating_expense' - Blacklisted/known operating expense
+        'other' - Unknown or unvalidated pattern keyword match
     """
     # First check blacklist/operating expenses
     if is_mca_blacklist(description) or is_operating_expense(description):
         return 'operating_expense'
     
-    # Then check for MCA
-    if is_mca_position(description):
+    # Check whitelist (definite MCA)
+    if is_mca_whitelist(description):
         return 'mca_position'
+    
+    # Check pattern keywords with validation
+    if has_mca_pattern_keyword(description):
+        # If we have transaction data, validate the pattern
+        if transactions and is_likely_mca_pattern(transactions):
+            return 'mca_position'
+        # Without validation, mark as 'potential_mca' for review
+        return 'potential_mca'
     
     return 'other'
 
@@ -287,10 +326,11 @@ def get_mca_confidence(description: str, transactions: Optional[list] = None) ->
                 'layer': 'pattern'
             }
         else:
+            # Without transaction data, be conservative - don't assume it's MCA
             return {
-                'is_mca': True,
+                'is_mca': False,
                 'confidence': 'low',
-                'reason': f'Pattern keyword "{matched}" (no transaction data to validate)',
+                'reason': f'Has keyword "{matched}" but no transaction data to validate pattern',
                 'layer': 'pattern'
             }
     

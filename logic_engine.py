@@ -152,12 +152,19 @@ class LogicEngine:
     
     def detect_mca_positions(self) -> Dict:
         """
-        Detect MCA positions (daily and weekly payments).
+        Detect MCA positions (daily and weekly payments) using smart 3-layer detection.
+        
+        Layer 1: Whitelist - Known MCA lenders (always flag)
+        Layer 2: Blacklist - Known false positives (never flag)
+        Layer 3: Pattern validation - Generic keywords require pattern analysis
         
         Returns:
             Dict with daily_positions, weekly_positions, and totals
         """
-        from openai_integration import MCA_KEYWORDS
+        from openai_integration import (
+            is_mca_whitelist, is_mca_blacklist, has_mca_pattern_keyword,
+            is_likely_mca_pattern
+        )
         
         if self.df.empty:
             return {
@@ -181,27 +188,45 @@ class LogicEngine:
                 'total_monthly_mca_payment': 0
             }
         
-        debits['is_mca'] = debits['description_clean'].apply(
-            lambda x: any(kw in x for kw in MCA_KEYWORDS) if x else False
-        )
-        
-        mca_debits = debits[debits['is_mca']]
-        
+        # Group transactions by merchant first (needed for pattern validation)
         merchant_groups = {}
-        for _, row in mca_debits.iterrows():
-            name = self._extract_merchant_name(row['description_clean'])
+        for _, row in debits.iterrows():
+            desc = row.get('description_clean', '')
+            if not desc:
+                continue
+            name = self._extract_merchant_name(desc)
             amount = abs(row['amount'])
             date = row.get('date')
             
             if name not in merchant_groups:
-                merchant_groups[name] = []
-            merchant_groups[name].append({'amount': amount, 'date': date})
+                merchant_groups[name] = {'description': desc, 'transactions': []}
+            merchant_groups[name]['transactions'].append({'amount': amount, 'date': date})
         
         daily_positions = []
         weekly_positions = []
         
-        for merchant, txns in merchant_groups.items():
+        for merchant, data in merchant_groups.items():
+            txns = data['transactions']
+            desc = data['description']
+            
             if len(txns) < 2:
+                continue
+            
+            # Smart 3-layer MCA detection
+            # Layer 1: Whitelist - Known MCA lenders (always include)
+            if is_mca_whitelist(desc):
+                is_mca = True
+            # Layer 2: Blacklist - Known false positives (never include)
+            elif is_mca_blacklist(desc):
+                is_mca = False
+            # Layer 3: Pattern keywords - require pattern validation
+            elif has_mca_pattern_keyword(desc):
+                # Validate with transaction pattern analysis
+                is_mca = is_likely_mca_pattern(txns)
+            else:
+                is_mca = False
+            
+            if not is_mca:
                 continue
             
             frequency = detect_payment_frequency([{'amount': t['amount'], 'date': t['date']} for t in txns])
