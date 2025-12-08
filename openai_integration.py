@@ -1349,7 +1349,13 @@ def adversarial_correction_prompt(
         differences.append(f"- Bank Accounts: You found {len(ai_accounts)} accounts, Human truth has {len(human_accounts)}")
     
     if not differences:
-        return "No significant differences found."
+        return json.dumps({
+            "errors_found": [],
+            "missed_transactions": [],
+            "miscategorized_transactions": [],
+            "correction_explanation": "No significant differences found between AI analysis and human truth. Both values may be empty or matching.",
+            "learned_pattern": "No new patterns to learn - results already match."
+        })
     
     differences_text = "\n".join(differences)
     

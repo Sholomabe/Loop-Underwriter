@@ -771,15 +771,76 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 1800) -> Tuple[
         
         avg_monthly_income = total_deposits / num_deposit_months
         
+        # Run logic engine to detect MCA positions from transactions
+        daily_positions = []
+        weekly_positions = []
+        monthly_positions_non_mca = []
+        total_daily_payment = 0
+        total_weekly_payment = 0
+        
+        try:
+            from logic_engine import LogicEngine
+            
+            # Convert transactions to logic engine format
+            engine_transactions = []
+            for t in transactions:
+                # Parse date in various formats
+                date_str = t.get('date', '')
+                parsed_date = None
+                if date_str:
+                    if '/' in date_str:
+                        # DD/MM/YYYY format
+                        parts = date_str.split('/')
+                        if len(parts) == 3:
+                            try:
+                                parsed_date = datetime.strptime(date_str, '%d/%m/%Y')
+                            except ValueError:
+                                pass
+                    elif '-' in date_str:
+                        # YYYY-MM-DD format
+                        try:
+                            parsed_date = datetime.strptime(date_str[:10], '%Y-%m-%d')
+                        except ValueError:
+                            pass
+                
+                # Determine if credit or debit
+                t_type = str(t.get('type', '')).lower()
+                is_credit = any(kw in t_type for kw in ['credit', 'deposit', 'addition'])
+                
+                engine_transactions.append({
+                    'description': t.get('description', ''),
+                    'amount': abs(t.get('amount', 0)) if is_credit else -abs(t.get('amount', 0)),
+                    'date': parsed_date or datetime.now(),
+                    'type': 'credit' if is_credit else 'debit',
+                    'account_number': summary.account_number
+                })
+            
+            if engine_transactions:
+                engine = LogicEngine(engine_transactions)
+                mca_result = engine.detect_mca_positions()
+                
+                daily_positions = mca_result.get('daily_positions', [])
+                weekly_positions = mca_result.get('weekly_positions', [])
+                total_daily_payment = mca_result.get('total_daily_payment', 0)
+                total_weekly_payment = mca_result.get('total_weekly_payment', 0)
+                
+                reasoning_parts.append(f"Logic Engine: Found {len(daily_positions)} daily and {len(weekly_positions)} weekly MCA positions")
+                
+        except Exception as e:
+            reasoning_parts.append(f"Logic Engine warning: {str(e)}")
+        
+        # Calculate total MCA payments for info_needed
+        total_mca_monthly = (total_daily_payment * 22) + (total_weekly_payment * 4)
+        
         extracted_data = {
             'transactions': transactions,
             'info_needed': {
                 'annual_income': total_deposits,
                 'average_monthly_income': avg_monthly_income,
-                'total_monthly_payments': total_withdrawals / num_withdrawal_months,
+                'total_monthly_payments': total_mca_monthly if total_mca_monthly > 0 else total_withdrawals / num_withdrawal_months,
                 'beginning_balance': summary.beginning_balance,
                 'ending_balance': summary.ending_balance,
-                'length_of_deal_months': num_deposit_months,  # Use actual months from data
+                'length_of_deal_months': num_deposit_months,
             },
             'bank_accounts': {
                 summary.account_number: {
@@ -807,9 +868,9 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 1800) -> Tuple[
             },
             'extraction_source': 'koncile',
             'task_id': task_id,
-            'daily_positions': [],
-            'weekly_positions': [],
-            'monthly_positions_non_mca': [],
+            'daily_positions': daily_positions,
+            'weekly_positions': weekly_positions,
+            'monthly_positions_non_mca': monthly_positions_non_mca,
             'other_liabilities': [],
         }
         
