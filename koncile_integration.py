@@ -745,17 +745,41 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 1800) -> Tuple[
         
         total_deposits = sum(abs(t['amount']) for t in deposits)
         total_withdrawals = sum(abs(t['amount']) for t in withdrawals)
-        avg_monthly_income = total_deposits / max(1, len(set(t.get('date', '')[:7] for t in deposits if t.get('date'))))
+        
+        # Helper to extract month-year from various date formats
+        def get_month_year(date_str):
+            """Extract month-year key from date string for grouping."""
+            if not date_str:
+                return None
+            # Try DD/MM/YYYY format first (Koncile format)
+            if '/' in date_str:
+                parts = date_str.split('/')
+                if len(parts) == 3:
+                    day, month, year = parts
+                    return f"{year}-{month}"
+            # Try YYYY-MM-DD format
+            elif '-' in date_str and len(date_str) >= 7:
+                return date_str[:7]
+            return date_str[:7] if len(date_str) >= 7 else None
+        
+        # Count unique months for averaging
+        deposit_months = set(m for m in (get_month_year(t.get('date', '')) for t in deposits) if m)
+        withdrawal_months = set(m for m in (get_month_year(t.get('date', '')) for t in withdrawals) if m)
+        
+        num_deposit_months = max(1, len(deposit_months))
+        num_withdrawal_months = max(1, len(withdrawal_months))
+        
+        avg_monthly_income = total_deposits / num_deposit_months
         
         extracted_data = {
             'transactions': transactions,
             'info_needed': {
                 'annual_income': total_deposits,
                 'average_monthly_income': avg_monthly_income,
-                'total_monthly_payments': total_withdrawals / max(1, len(set(t.get('date', '')[:7] for t in withdrawals if t.get('date')))),
+                'total_monthly_payments': total_withdrawals / num_withdrawal_months,
                 'beginning_balance': summary.beginning_balance,
                 'ending_balance': summary.ending_balance,
-                'length_of_deal_months': 1,
+                'length_of_deal_months': num_deposit_months,  # Use actual months from data
             },
             'bank_accounts': {
                 summary.account_number: {
