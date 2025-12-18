@@ -264,6 +264,18 @@ def find_inter_account_transfers(
     # Convert to DataFrame for easier analysis
     df = pd.DataFrame(transactions)
     
+    # Normalize date column name (Koncile uses 'date', legacy code uses 'transaction_date')
+    if 'date' in df.columns and 'transaction_date' not in df.columns:
+        df['transaction_date'] = df['date']
+    
+    # Add default source_account_id if missing
+    if 'source_account_id' not in df.columns:
+        df['source_account_id'] = 'default'
+    
+    # Add id column if missing (use index)
+    if 'id' not in df.columns:
+        df['id'] = df.index.astype(str)
+    
     # Ensure we have required columns
     required_cols = ['id', 'amount', 'transaction_date', 'source_account_id']
     for col in required_cols:
@@ -274,9 +286,9 @@ def find_inter_account_transfers(
     # Convert amount column to float (handling string amounts like "$1,234.56")
     df['amount'] = df['amount'].apply(safe_float)
     
-    # Convert date strings to datetime if needed
+    # Convert date strings to datetime if needed (handle DD/MM/YYYY from Koncile)
     if df['transaction_date'].dtype == 'object':
-        df['transaction_date'] = pd.to_datetime(df['transaction_date'], errors='coerce')
+        df['transaction_date'] = pd.to_datetime(df['transaction_date'], dayfirst=True, errors='coerce')
     
     # Initialize transfer flags and lender flags
     df['is_internal_transfer'] = False

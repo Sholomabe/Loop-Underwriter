@@ -832,10 +832,13 @@ def extract_with_koncile(file_path: str, max_poll_seconds: int = 1800) -> Tuple[
         # Calculate total MCA payments for info_needed
         total_mca_monthly = (total_daily_payment * 22) + (total_weekly_payment * 4)
         
+        # Calculate annual income correctly: monthly average * 12
+        annual_income = avg_monthly_income * 12
+        
         extracted_data = {
             'transactions': transactions,
             'info_needed': {
-                'annual_income': total_deposits,
+                'annual_income': annual_income,  # Fixed: was incorrectly using total_deposits
                 'average_monthly_income': avg_monthly_income,
                 'total_monthly_payments': total_mca_monthly if total_mca_monthly > 0 else total_withdrawals / num_withdrawal_months,
                 'beginning_balance': summary.beginning_balance,
