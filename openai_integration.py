@@ -25,11 +25,14 @@ openai = OpenAI(
 # LAYER 1: MCA WHITELIST - Known MCA lenders (always flag as MCA)
 # These are confirmed MCA/merchant cash advance companies
 MCA_WHITELIST = [
-    # User-confirmed MCA lenders
+    # User-confirmed MCA lenders from training
     "FORA FINANCIAL", "FORAFINANCIAL", "FORA FIN",
     "SPARTAN CAP", "SPARTAN CAPITAL",
     "EBF HOLDINGS", "EBF HOLDINGS EBF", "EBF DEBIT",
     "MCA SERVICING", "MCA SERVICE", "MCA SERVIC",
+    "LENDR", "LENDR 190", "LENDR 180", "LENDR CAPITAL",
+    "FOX", "FOX 180", "FOX 190", "FOX CAPITAL", "FOX FUNDING",
+    "SECUREACCOUNT", "SECUREACCOUNTSER", "SECURE ACCOUNT",
     
     # Well-known MCA lenders
     "CREDIBLY", "CREDIBLY FUND",
@@ -63,6 +66,17 @@ MCA_WHITELIST = [
     "AMAZON LENDING",
     "PAYPAL WORKING", "PAYPAL LOAN",
     "STRIPE CAPITAL",
+    
+    # Additional common MCA lenders
+    "ACH DAILY", "ACH WEEKLY",
+    "EVEREST BUSINESS", "EVEREST FUNDING",
+    "TITAN FUNDING", "TITAN CAPITAL",
+    "VELOCITY CAPITAL", "VELOCITY FUNDING",
+    "SWIFT CAPITAL", "SWIFTCAPITAL",
+    "FIRST CAPITAL", "1ST CAPITAL",
+    "BUSINESS BACKER", "BUSINESSBACKER",
+    "SNAP ADVANCE", "SNAPADVANCE",
+    "MERCHANT ADVANCE", "MERCHANT FUNDING",
 ]
 
 # LAYER 2: MCA BLACKLIST - Known false positives (never flag as MCA)
@@ -133,6 +147,163 @@ def is_mca_whitelist(description: str) -> bool:
     return any(lender in desc_upper for lender in MCA_WHITELIST)
 
 
+def is_mca_whitelist_fuzzy(description: str, threshold: int = 80) -> Tuple[bool, Optional[str], int]:
+    """
+    Check if transaction fuzzy-matches a known MCA lender.
+    Uses fuzzywuzzy for approximate string matching.
+    
+    Args:
+        description: Transaction description to check
+        threshold: Minimum similarity score (0-100) to consider a match
+        
+    Returns:
+        Tuple of (is_match, matched_lender, similarity_score)
+    """
+    try:
+        from fuzzywuzzy import fuzz
+    except ImportError:
+        return (False, None, 0)
+    
+    desc_upper = description.upper()
+    
+    # First check exact match (fast path)
+    for lender in MCA_WHITELIST:
+        if lender in desc_upper:
+            return (True, lender, 100)
+    
+    # Try fuzzy matching
+    best_match = None
+    best_score = 0
+    
+    for lender in MCA_WHITELIST:
+        # Use token_set_ratio for better matching of partial strings
+        score = fuzz.token_set_ratio(lender, desc_upper)
+        if score > best_score:
+            best_score = score
+            best_match = lender
+    
+    if best_score >= threshold:
+        return (True, best_match, best_score)
+    
+    return (False, None, best_score)
+
+
+def get_learned_mca_patterns() -> List[str]:
+    """
+    Load learned MCA patterns from the database (GoldStandard_Rules).
+    Returns a list of merchant names/patterns that have been identified as MCA.
+    """
+    learned_patterns = []
+    try:
+        from database import get_db
+        from models import GoldStandardRule
+        
+        with get_db() as db:
+            rules = db.query(GoldStandardRule).filter(
+                GoldStandardRule.rule_type == 'mca_vendor'
+            ).all()
+            
+            for rule in rules:
+                if rule.rule_pattern:
+                    learned_patterns.append(rule.rule_pattern.upper())
+    except Exception:
+        pass
+    
+    return learned_patterns
+
+
+def is_mca_learned(description: str, threshold: int = 80) -> Tuple[bool, Optional[str], int]:
+    """
+    Check if transaction matches a learned MCA pattern from training.
+    Uses fuzzy matching against patterns stored in GoldStandard_Rules.
+    
+    Args:
+        description: Transaction description to check
+        threshold: Minimum similarity score (0-100) to consider a match
+        
+    Returns:
+        Tuple of (is_match, matched_pattern, similarity_score)
+    """
+    learned_patterns = get_learned_mca_patterns()
+    if not learned_patterns:
+        return (False, None, 0)
+    
+    try:
+        from fuzzywuzzy import fuzz
+    except ImportError:
+        # Fallback to exact match
+        desc_upper = description.upper()
+        for pattern in learned_patterns:
+            if pattern in desc_upper:
+                return (True, pattern, 100)
+        return (False, None, 0)
+    
+    desc_upper = description.upper()
+    
+    # First check exact match (fast path)
+    for pattern in learned_patterns:
+        if pattern in desc_upper:
+            return (True, pattern, 100)
+    
+    # Try fuzzy matching
+    best_match = None
+    best_score = 0
+    
+    for pattern in learned_patterns:
+        score = fuzz.token_set_ratio(pattern, desc_upper)
+        if score > best_score:
+            best_score = score
+            best_match = pattern
+    
+    if best_score >= threshold:
+        return (True, best_match, best_score)
+    
+    return (False, None, best_score)
+
+
+def save_mca_to_learned(vendor_name: str, source: str = 'training') -> bool:
+    """
+    Save a newly identified MCA vendor to the database for future matching.
+    
+    Args:
+        vendor_name: Name of the MCA vendor to save
+        source: Where this pattern was learned from
+        
+    Returns:
+        True if saved successfully, False otherwise
+    """
+    try:
+        from database import get_db
+        from models import GoldStandardRule
+        from datetime import datetime
+        
+        with get_db() as db:
+            # Check if already exists
+            existing = db.query(GoldStandardRule).filter(
+                GoldStandardRule.rule_type == 'mca_vendor',
+                GoldStandardRule.rule_pattern == vendor_name.upper()
+            ).first()
+            
+            if existing:
+                return True  # Already exists
+            
+            rule = GoldStandardRule(
+                rule_pattern=vendor_name.upper(),
+                rule_type='mca_vendor',
+                original_classification='unknown',
+                correct_classification='mca_position',
+                confidence_score=1.0,
+                context_json={'source': source, 'added_by': 'auto_learning'},
+                created_at=datetime.utcnow()
+            )
+            db.add(rule)
+            db.commit()
+            return True
+    except Exception as e:
+        print(f"Error saving MCA pattern: {e}")
+        return False
+
+
 def is_mca_blacklist(description: str) -> bool:
     """Check if transaction matches a known false positive (definitely NOT MCA)."""
     desc_upper = description.upper()
@@ -145,37 +316,52 @@ def has_mca_pattern_keyword(description: str) -> bool:
     return any(kw in desc_upper for kw in MCA_PATTERN_KEYWORDS)
 
 
-def is_mca_position(description: str, transactions: Optional[list] = None) -> bool:
+def is_mca_position(description: str, transactions: Optional[list] = None, 
+                    use_fuzzy: bool = True, fuzzy_threshold: int = 80) -> bool:
     """
-    Smart MCA detection using 3-layer logic:
+    Smart MCA detection using 4-layer logic with fuzzy matching:
     1. Check whitelist first (known MCA lenders) → True
-    2. Check blacklist (known false positives) → False
-    3. Check pattern keywords + validate with transaction data → True only if pattern validates
+    2. Check learned patterns from training → True  
+    3. Check blacklist (known false positives) → False
+    4. Check pattern keywords + validate with transaction data → True only if pattern validates
+    5. Fuzzy match against whitelist if enabled → True if high similarity
     
     Args:
         description: Transaction description to check
         transactions: Optional list of transactions for pattern validation
-                     (required for Layer 3 pattern-based detection)
+                     (required for Layer 4 pattern-based detection)
+        use_fuzzy: Whether to use fuzzy matching (default True)
+        fuzzy_threshold: Minimum similarity score for fuzzy match (0-100)
     
     Returns:
         True if definitely or likely MCA, False otherwise
     """
-    # Layer 1: Whitelist - definite MCA (no transaction data needed)
+    # Layer 1: Whitelist - definite MCA (exact match)
     if is_mca_whitelist(description):
         return True
     
-    # Layer 2: Blacklist - definite NOT MCA
+    # Layer 2: Learned patterns from training (exact or fuzzy)
+    is_learned, _, _ = is_mca_learned(description, threshold=fuzzy_threshold)
+    if is_learned:
+        return True
+    
+    # Layer 3: Blacklist - definite NOT MCA
     if is_mca_blacklist(description):
         return False
     
-    # Layer 3: Pattern keywords - ONLY flag as MCA if transaction pattern validates
+    # Layer 4: Fuzzy match against whitelist
+    if use_fuzzy:
+        is_fuzzy_match, _, score = is_mca_whitelist_fuzzy(description, threshold=fuzzy_threshold)
+        if is_fuzzy_match:
+            return True
+    
+    # Layer 5: Pattern keywords - ONLY flag as MCA if transaction pattern validates
     # This prevents false positives like "CAPITAL EQUIPMENT LEASE"
     if has_mca_pattern_keyword(description):
         # If we have transaction data, validate the pattern
         if transactions and is_likely_mca_pattern(transactions):
             return True
         # Without transaction data, be conservative - don't assume it's MCA
-        # The caller should use is_mca_position_with_pattern() for full validation
         return False
     
     return False

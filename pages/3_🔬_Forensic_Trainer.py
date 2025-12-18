@@ -4,7 +4,7 @@ import os
 from database import get_db
 from models import Deal, PDFFile, Transaction, TrainingExample, GoldStandardRule
 from datetime import datetime
-from openai_integration import adversarial_correction_prompt, validate_and_sanitize_transactions
+from openai_integration import adversarial_correction_prompt, validate_and_sanitize_transactions, save_mca_to_learned
 from excel_parser import parse_underwriting_excel, format_extracted_data_for_display
 
 st.set_page_config(page_title="Forensic Trainer", page_icon="🔬", layout="wide")
@@ -764,6 +764,31 @@ if 'training_result' in st.session_state:
             st.error(f"❌ Mismatch in count")
         else:
             st.success("✅ Count matches")
+    
+    # AUTO-LEARN: Save MCA positions from truth data to improve future detection
+    if human_daily or human_weekly:
+        st.markdown("### 🧠 Auto-Learning MCA Positions")
+        
+        all_truth_positions = []
+        for pos in human_daily:
+            name = pos.get('name', pos.get('merchant', ''))
+            if name:
+                all_truth_positions.append(('daily', name))
+        for pos in human_weekly:
+            name = pos.get('name', pos.get('merchant', ''))
+            if name:
+                all_truth_positions.append(('weekly', name))
+        
+        if all_truth_positions:
+            learned_count = 0
+            for pos_type, name in all_truth_positions:
+                if save_mca_to_learned(name, source='forensic_trainer'):
+                    learned_count += 1
+            
+            if learned_count > 0:
+                st.success(f"✅ Auto-learned {learned_count} MCA vendor(s) for future detection: {', '.join([n for _, n in all_truth_positions])}")
+            else:
+                st.info("ℹ️ MCA vendors already known or learning skipped")
     
     # BANK ACCOUNTS COMPARISON
     st.markdown("### 🏦 Bank Accounts Comparison")
