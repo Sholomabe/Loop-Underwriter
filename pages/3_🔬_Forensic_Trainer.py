@@ -780,15 +780,23 @@ if 'training_result' in st.session_state:
                 all_truth_positions.append(('weekly', name))
         
         if all_truth_positions:
-            learned_count = 0
-            for pos_type, name in all_truth_positions:
-                if save_mca_to_learned(name, source='forensic_trainer'):
-                    learned_count += 1
+            new_count = 0
+            already_known_count = 0
+            new_vendors = []
             
-            if learned_count > 0:
-                st.success(f"✅ Auto-learned {learned_count} MCA vendor(s) for future detection: {', '.join([n for _, n in all_truth_positions])}")
-            else:
-                st.info("ℹ️ MCA vendors already known or learning skipped")
+            for pos_type, name in all_truth_positions:
+                success, is_new = save_mca_to_learned(name, source='forensic_trainer')
+                if success:
+                    if is_new:
+                        new_count += 1
+                        new_vendors.append(name)
+                    else:
+                        already_known_count += 1
+            
+            if new_count > 0:
+                st.success(f"✅ Auto-learned {new_count} NEW MCA vendor(s): {', '.join(new_vendors)}")
+            if already_known_count > 0:
+                st.info(f"ℹ️ {already_known_count} MCA vendor(s) were already known")
     
     # BANK ACCOUNTS COMPARISON
     st.markdown("### 🏦 Bank Accounts Comparison")

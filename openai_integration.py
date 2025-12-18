@@ -261,7 +261,7 @@ def is_mca_learned(description: str, threshold: int = 80) -> Tuple[bool, Optiona
     return (False, None, best_score)
 
 
-def save_mca_to_learned(vendor_name: str, source: str = 'training') -> bool:
+def save_mca_to_learned(vendor_name: str, source: str = 'training') -> Tuple[bool, bool]:
     """
     Save a newly identified MCA vendor to the database for future matching.
     
@@ -270,7 +270,9 @@ def save_mca_to_learned(vendor_name: str, source: str = 'training') -> bool:
         source: Where this pattern was learned from
         
     Returns:
-        True if saved successfully, False otherwise
+        Tuple of (success, is_new): 
+        - success: True if operation succeeded (saved or already exists)
+        - is_new: True if this was a new pattern, False if it already existed
     """
     try:
         from database import get_db
@@ -285,7 +287,7 @@ def save_mca_to_learned(vendor_name: str, source: str = 'training') -> bool:
             ).first()
             
             if existing:
-                return True  # Already exists
+                return (True, False)  # Already exists - success but not new
             
             rule = GoldStandardRule(
                 rule_pattern=vendor_name.upper(),
@@ -298,10 +300,10 @@ def save_mca_to_learned(vendor_name: str, source: str = 'training') -> bool:
             )
             db.add(rule)
             db.commit()
-            return True
+            return (True, True)  # Saved successfully and is new
     except Exception as e:
         print(f"Error saving MCA pattern: {e}")
-        return False
+        return (False, False)
 
 
 def is_mca_blacklist(description: str) -> bool:
